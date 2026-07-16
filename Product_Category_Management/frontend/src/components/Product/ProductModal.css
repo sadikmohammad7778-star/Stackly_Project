@@ -1,0 +1,83 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-modal {
+  width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.product-modal h2 {
+  margin-bottom: 20px;
+}
+
+.product-modal input,
+.product-modal textarea,
+.product-modal select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.product-modal textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.modal-buttons button[type="submit"] {
+  background: #7c3aed;
+  color: white;
+}
+
+.cancel-btn {
+  background: #dc2626;
+  color: white;
+}
+
+
+.active-btn{
+    background:#16a34a;
+    color:white;
+    border:none;
+    padding:6px 14px;
+    border-radius:20px;
+    cursor:pointer;
+}
+
+.inactive-btn{
+    background:#dc2626;
+    color:white;
+    border:none;
+    padding:6px 14px;
+    border-radius:20px;
+    cursor:pointer;
+}
+
+.active-btn:hover,
+.inactive-btn:hover{
+    opacity:.9;
+}

@@ -1,0 +1,51 @@
+.settings-container{
+    padding:20px;
+}
+
+.settings-container h1{
+    margin-bottom:25px;
+    color:#111827;
+}
+
+.settings-card{
+    background:#fff;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+    max-width:700px;
+}
+
+.setting-item{
+    display:flex;
+    flex-direction:column;
+    margin-bottom:20px;
+}
+
+.setting-item label{
+    margin-bottom:8px;
+    font-weight:600;
+    color:#374151;
+}
+
+.setting-item input,
+.setting-item select{
+    padding:12px;
+    border:1px solid #d1d5db;
+    border-radius:8px;
+    font-size:15px;
+}
+
+.save-btn{
+    background:#7c3aed;
+    color:#fff;
+    border:none;
+    padding:12px 25px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+    transition:.3s;
+}
+
+.save-btn:hover{
+    background:#6d28d9;
+}

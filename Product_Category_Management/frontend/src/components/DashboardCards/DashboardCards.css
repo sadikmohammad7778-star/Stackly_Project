@@ -1,0 +1,38 @@
+.cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:white;
+    padding:25px;
+    border-radius:18px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+.card-icon{
+    width:65px;
+    height:65px;
+    border-radius:18px;
+    background:#7c3aed;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    font-size:26px;
+}
+
+.card h4{
+    color:#6b7280;
+    margin:0;
+}
+
+.card h2{
+    color:#111827;
+    font-size:34px;
+    margin-top:10px;
+}

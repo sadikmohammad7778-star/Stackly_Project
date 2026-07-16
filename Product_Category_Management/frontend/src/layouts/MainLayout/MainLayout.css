@@ -1,0 +1,21 @@
+.layout {
+  display: flex;
+}
+
+.main-content {
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+.page-content {
+  padding: 35px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 70px;
+    width: calc(100% - 70px);
+  }
+}
