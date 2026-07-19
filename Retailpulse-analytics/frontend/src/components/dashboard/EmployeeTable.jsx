@@ -1,79 +1,53 @@
+import { useEffect, useState } from "react";
 import "./EmployeeTable.css";
 
-const employees = [
-  {
-    id: 1,
-    name: "Mohammad Sadik",
-    department: "Engineering",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Rahul Kumar",
-    department: "Sales",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Priya Sharma",
-    department: "HR",
-    status: "Inactive",
-  },
-];
+import { getTopProducts } from "../../api/DashboardApi";
 
 export default function EmployeeTable() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    loadTopProducts();
+  }, []);
+
+  const loadTopProducts = async () => {
+    try {
+      const response = await getTopProducts();
+      setProducts(response);
+    } catch (error) {
+      console.error("Error loading top products:", error);
+    }
+  };
+
   return (
     <div className="employee-table">
-
       <table>
-
         <thead>
-
           <tr>
-
-            <th>ID</th>
-            <th>Name</th>
-            <th>Department</th>
-            <th>Status</th>
-
+            <th>#</th>
+            <th>Product Name</th>
+            <th>Quantity Sold</th>
           </tr>
-
         </thead>
 
         <tbody>
-
-          {employees.map((emp) => (
-
-            <tr key={emp.id}>
-
-              <td>{emp.id}</td>
-
-              <td>{emp.name}</td>
-
-              <td>{emp.department}</td>
-
-              <td>
-
-                <span
-                  className={
-                    emp.status === "Active"
-                      ? "active"
-                      : "inactive"
-                  }
-                >
-                  {emp.status}
-                </span>
-
+          {products.length > 0 ? (
+            products.map((product, index) => (
+              <tr key={index}>
+                <td>{index + 1}</td>
+                <td>{product.product_name}</td>
+                <td>{product.quantity_sold}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="3" style={{ textAlign: "center" }}>
+                No product data available
               </td>
-
             </tr>
-
-          ))}
-
+          )}
         </tbody>
-
       </table>
-
     </div>
   );
 }

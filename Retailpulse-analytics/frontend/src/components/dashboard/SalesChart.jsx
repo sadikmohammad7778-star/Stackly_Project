@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -8,16 +9,24 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const data = [
-  { month: "Jan", sales: 4000 },
-  { month: "Feb", sales: 5200 },
-  { month: "Mar", sales: 6100 },
-  { month: "Apr", sales: 5800 },
-  { month: "May", sales: 7600 },
-  { month: "Jun", sales: 9100 },
-];
+import { getMonthlySales } from "../../api/DashboardApi";
 
 export default function SalesChart() {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    loadMonthlySales();
+  }, []);
+
+  const loadMonthlySales = async () => {
+    try {
+      const response = await getMonthlySales();
+      setData(response);
+    } catch (error) {
+      console.error("Error loading monthly sales:", error);
+    }
+  };
+
   return (
     <ResponsiveContainer width="100%" height={320}>
       <LineChart data={data}>
@@ -27,7 +36,7 @@ export default function SalesChart() {
         <Tooltip />
         <Line
           type="monotone"
-          dataKey="sales"
+          dataKey="revenue"
           stroke="#6366F1"
           strokeWidth={3}
         />

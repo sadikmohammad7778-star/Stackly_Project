@@ -1,106 +1,92 @@
-import RevenueChart from "../components/dashboard/RevenueChart";
-import EmployeePieChart from "../components/dashboard/EmployeePieChart";
-import AttendanceChart from "../components/dashboard/AttendanceChart";
-
+import { useEffect, useState } from "react";
 import {
-  FiTrendingUp,
-  FiUsers,
-  FiBriefcase,
-  FiCalendar,
-} from "react-icons/fi";
-
+  getRevenueReport,
+  getInventoryReport,
+} from "../api/analyticsApi";
 import "./Analytics.css";
 
 export default function Analytics() {
+  const [revenue, setRevenue] = useState(null);
+  const [inventory, setInventory] = useState(null);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      const revenueData = await getRevenueReport();
+      const inventoryData = await getInventoryReport();
+
+      setRevenue(revenueData);
+      setInventory(inventoryData);
+    } catch (error) {
+      console.error("Error loading analytics:", error);
+    }
+  };
 
   return (
-
     <div className="analytics-page">
 
-      <div className="analytics-header">
+      <h2>Analytics Dashboard</h2>
 
-        <h2>Analytics Dashboard</h2>
-
-      </div>
-
-      {/* Summary Cards */}
-
-      <div className="analytics-cards">
-
-        <div className="analytics-card">
-
-          <FiTrendingUp className="card-icon" />
-
-          <h3>Total Revenue</h3>
-
-          <h1>₹4,82,500</h1>
-
-        </div>
-
-        <div className="analytics-card">
-
-          <FiUsers className="card-icon" />
-
-          <h3>Total Employees</h3>
-
-          <h1>215</h1>
-
-        </div>
-
-        <div className="analytics-card">
-
-          <FiBriefcase className="card-icon" />
-
-          <h3>Companies</h3>
-
-          <h1>12</h1>
-
-        </div>
-
-        <div className="analytics-card">
-
-          <FiCalendar className="card-icon" />
-
-          <h3>Attendance</h3>
-
-          <h1>97%</h1>
-
-        </div>
-
-      </div>
-
-      {/* Charts */}
+      <h3 className="section-title">Revenue Analytics</h3>
 
       <div className="analytics-grid">
 
-        <div className="chart-card">
-
-          <h3>Revenue Overview</h3>
-
-          <RevenueChart />
-
+        <div className="analytics-card">
+          <h4>Today</h4>
+          <p>₹ {revenue?.today ?? 0}</p>
         </div>
 
-        <div className="chart-card">
+        <div className="analytics-card">
+          <h4>This Week</h4>
+          <p>₹ {revenue?.this_week ?? 0}</p>
+        </div>
 
-          <h3>Department Distribution</h3>
+        <div className="analytics-card">
+          <h4>This Month</h4>
+          <p>₹ {revenue?.this_month ?? 0}</p>
+        </div>
 
-          <EmployeePieChart />
-
+        <div className="analytics-card">
+          <h4>This Year</h4>
+          <p>₹ {revenue?.this_year ?? 0}</p>
         </div>
 
       </div>
 
-      <div className="chart-card">
+      <h3 className="section-title">Inventory Analytics</h3>
 
-        <h3>Weekly Attendance</h3>
+      <div className="analytics-grid">
 
-        <AttendanceChart />
+        <div className="analytics-card">
+          <h4>Total Products</h4>
+          <p>{inventory?.total_products ?? 0}</p>
+        </div>
+
+        <div className="analytics-card">
+          <h4>In Stock</h4>
+          <p>{inventory?.in_stock ?? 0}</p>
+        </div>
+
+        <div className="analytics-card">
+          <h4>Low Stock</h4>
+          <p>{inventory?.low_stock ?? 0}</p>
+        </div>
+
+        <div className="analytics-card">
+          <h4>Out of Stock</h4>
+          <p>{inventory?.out_of_stock ?? 0}</p>
+        </div>
+
+        <div className="analytics-card inventory-value">
+          <h4>Inventory Value</h4>
+          <p>₹ {inventory?.inventory_value ?? 0}</p>
+        </div>
 
       </div>
 
     </div>
-
   );
-
 }

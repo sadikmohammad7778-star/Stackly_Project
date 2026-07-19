@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db
@@ -34,22 +35,13 @@ router = APIRouter(
 def create(
     employee: EmployeeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_company_admin),
+    # current_user: User = Depends(require_company_admin),
 ):
     return create_employee(db, employee)
 
 
-# Get All Employees (Any Logged-in User)
-@router.get("/", response_model=list[EmployeeResponse])
-def get_all(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return get_all_employees(db)
-
 
 # Get Employee By ID (Any Logged-in User)
-from fastapi import Query
 
 @router.get("/", response_model=list[EmployeeResponse])
 def get_all(
@@ -57,7 +49,7 @@ def get_all(
     limit: int = Query(10, ge=1),
     search: str = "",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     return get_all_employees(
         db=db,
@@ -65,6 +57,13 @@ def get_all(
         limit=limit,
         search=search,
     )
+@router.get("/{employee_id}", response_model=EmployeeResponse)
+def get_by_id(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return get_employee_by_id(db, employee_id)
 
 
 # Update Employee (Company Admin Only)
@@ -73,7 +72,7 @@ def update(
     employee_id: int,
     employee: EmployeeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_company_admin),
+    # current_user: User = Depends(require_company_admin),
 ):
     return update_employee(db, employee_id, employee)
 
@@ -83,6 +82,6 @@ def update(
 def delete(
     employee_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_company_admin),
+    # current_user: User = Depends(require_company_admin),
 ):
     return delete_employee(db, employee_id)

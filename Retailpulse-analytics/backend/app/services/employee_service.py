@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.employee import Employee
 from app.models.company import Company
 from app.schemas.employee_schema import EmployeeCreate, EmployeeUpdate
+from app.services.audit_service import create_audit_log
 
 
 def create_employee(db: Session, employee: EmployeeCreate):
@@ -33,15 +34,14 @@ def create_employee(db: Session, employee: EmployeeCreate):
     db.add(new_employee)
     db.commit()
     db.refresh(new_employee)
+
+#     create_audit_log(
+#     db=db,
+#     user_id=1,
+#     action="CREATE",
+#     module="Employee"
+#    )
     return new_employee
-
-    create_audit_log(
-    db=db,
-    user_id=1,
-    action="CREATE",
-    module="Employee"
-   )
-
 
 from sqlalchemy import or_
 
@@ -101,7 +101,24 @@ def update_employee(
             detail="Employee not found."
         )
 
-    for key, value in employee.model_dump().items():
+    # Check duplicate email
+    if employee.email:
+        duplicate = (
+            db.query(Employee)
+            .filter(
+                Employee.email == employee.email,
+                Employee.id != employee_id
+            )
+            .first()
+        )
+
+        if duplicate:
+            raise HTTPException(
+                status_code=400,
+                detail="Employee email already exists."
+            )
+
+    for key, value in employee.model_dump(exclude_unset=True).items():
         setattr(existing, key, value)
 
     db.commit()

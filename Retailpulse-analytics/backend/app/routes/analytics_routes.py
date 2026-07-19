@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.config.dependency import get_db
-from app.security.auth_dependency import get_current_user
+from app.config.database import get_db
+
+from app.schemas.analytics_schema import (
+    RevenueReport,
+    InventoryReport,
+)
 
 from app.services.analytics_service import (
-    get_overview,
-    employees_by_department,
+    get_revenue_report,
+    get_inventory_report,
 )
 
 router = APIRouter(
@@ -15,17 +19,17 @@ router = APIRouter(
 )
 
 
-@router.get("/overview")
-def overview(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return get_overview(db)
+@router.get(
+    "/revenue",
+    response_model=RevenueReport,
+)
+def revenue_report(db: Session = Depends(get_db)):
+    return get_revenue_report(db)
 
 
-@router.get("/employees-by-department")
-def employee_department(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    return employees_by_department(db)
+@router.get(
+    "/inventory",
+    response_model=InventoryReport,
+)
+def inventory_report(db: Session = Depends(get_db)):
+    return get_inventory_report(db)

@@ -12,8 +12,11 @@ import {
 } from "../api/departmentApi";
 
 import "./Departments.css";
+import DepartmentModal from "../components/forms/DepartmentModal";
 
 export default function Departments() {
+
+  const [openModal, setOpenModal] = useState(false);
 
   const [departments, setDepartments] = useState([]);
 
@@ -48,11 +51,10 @@ export default function Departments() {
 
         <h2>Departments</h2>
 
-        <button>
+        <button onClick={() => setOpenModal(true)}>
           <FiPlus />
           Add Department
         </button>
-
       </div>
 
       <div className="search-box">
@@ -70,18 +72,14 @@ export default function Departments() {
 
         <table>
 
-          <thead>
-
+        <thead>
             <tr>
-
               <th>ID</th>
-              <th>Name</th>
-              <th>Manager</th>
+              <th>Department Name</th>
+              <th>Description</th>
               <th>Actions</th>
-
             </tr>
-
-          </thead>
+        </thead>
 
           <tbody>
 
@@ -93,7 +91,7 @@ export default function Departments() {
 
                 <td>{department.department_name}</td>
 
-                <td>{department.manager_name}</td>
+                <td>{department.description}</td>
 
                 <td>
 
@@ -119,6 +117,9 @@ export default function Departments() {
         </table>
 
       </div>
+      <button className="edit">
+        <FiEdit />
+      </button>
 
     </div>
   );

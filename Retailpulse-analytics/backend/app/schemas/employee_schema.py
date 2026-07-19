@@ -1,7 +1,6 @@
 from datetime import date
 from pydantic import BaseModel, EmailStr
 
-
 class EmployeeCreate(BaseModel):
     company_id: int
     employee_code: str
@@ -12,6 +11,8 @@ class EmployeeCreate(BaseModel):
     designation: str
     salary: float
     joining_date: date
+    status: bool
+    department_id: int
 
 
 class EmployeeUpdate(BaseModel):

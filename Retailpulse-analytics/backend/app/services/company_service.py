@@ -2,7 +2,6 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.company import Company
-from app.schemas.company_schema import CompanyCreate
 from app.schemas.company_schema import CompanyCreate,CompanyUpdate
 from app.services.audit_service import create_audit_log
 
@@ -29,7 +28,6 @@ def create_company(db: Session, company: CompanyCreate):
     db.add(new_company)
     db.commit()
     db.refresh(new_company)
-    return new_company
 
     create_audit_log(
     db=db,
@@ -37,6 +35,10 @@ def create_company(db: Session, company: CompanyCreate):
     action="CREATE",
     module="Company"
     )
+    
+    return new_company
+
+    
 
 
 def get_all_companies(db: Session):

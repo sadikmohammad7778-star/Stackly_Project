@@ -8,8 +8,10 @@ export default function DepartmentModal({
   onSuccess,
 }) {
   const initialForm = {
+
+    company_id: "",
     department_name: "",
-    manager_name: "",
+    description: "",
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -77,12 +79,20 @@ export default function DepartmentModal({
           />
 
           <input
-            type="text"
-            name="manager_name"
-            placeholder="Manager Name"
-            value={formData.manager_name}
+            type="number"
+            name="company_id"
+            placeholder="Company ID"
+            value={formData.company_id}
             onChange={handleChange}
             required
+          />
+
+          <input
+            type="text"
+            name="description"
+            placeholder="Description"
+            value={formData.description}
+            onChange={handleChange}
           />
 
           <div className="modal-buttons">

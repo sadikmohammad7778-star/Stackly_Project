@@ -7,7 +7,7 @@ import {
 } from "react-icons/fi";
 
 import CompanyModal from "../components/forms/CompanyModal";
-import EditCompanyModal from "../components/forms/EmployeeCompanyModal";
+import EmployeeCompanyModal from "../components/forms/EmployeeCompanyModal";
 
 import {
   getCompanies,
@@ -166,7 +166,7 @@ export default function Companies() {
         onSuccess={loadCompanies}
       />
 
-      <EditCompanyModal
+      <EmployeeCompanyModal
         isOpen={editModalOpen}
         company={selectedCompany}
         onClose={() => setEditModalOpen(false)}

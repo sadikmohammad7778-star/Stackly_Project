@@ -1,10 +1,10 @@
 import {
   FiHome,
   FiBriefcase,
-  FiUsers,
   FiGrid,
+  FiShoppingBag,
+  FiShoppingCart,
   FiBarChart2,
-  FiCalendar,
   FiFileText,
   FiSettings,
   FiLogOut,
@@ -15,12 +15,13 @@ import "./Sidebar.css";
 const menu = [
   { name: "Dashboard", path: "/dashboard", icon: <FiHome /> },
   { name: "Companies", path: "/companies", icon: <FiBriefcase /> },
-  { name: "Employees", path: "/employees", icon: <FiUsers /> },
-  { name: "Departments", path: "/departments", icon: <FiGrid /> },
+  { name: "Categories", path: "/categories", icon: <FiGrid /> },
+  { name: "Products", path: "/products", icon: <FiShoppingBag /> },
+  { name: "Sales", path: "/sales", icon: <FiShoppingCart /> },
   { name: "Analytics", path: "/analytics", icon: <FiBarChart2 /> },
-  { name: "Attendance", path: "/attendance", icon: <FiCalendar /> },
   { name: "Reports", path: "/reports", icon: <FiFileText /> },
   { name: "Settings", path: "/settings", icon: <FiSettings /> },
+  
 ];
 
 export default function Sidebar() {
