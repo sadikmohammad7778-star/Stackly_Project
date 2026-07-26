@@ -1,10 +1,12 @@
-from jose import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
+
 from dotenv import load_dotenv
+from jose import jwt, JWTError
 
 load_dotenv()
 
+# JWT Configuration
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 
@@ -18,34 +20,58 @@ REFRESH_TOKEN_EXPIRE_DAYS = int(
 
 
 def create_access_token(data: dict):
-
     payload = data.copy()
 
-    expire = datetime.utcnow() + timedelta(
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
-    payload.update({"exp": expire})
+    payload.update({
+        "type": "access",
+        "iat": now,
+        "exp": expire,
+    })
 
     return jwt.encode(
         payload,
         SECRET_KEY,
-        algorithm=ALGORITHM
+        algorithm=ALGORITHM,
     )
 
 
 def create_refresh_token(data: dict):
-
     payload = data.copy()
 
-    expire = datetime.utcnow() + timedelta(
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(
         days=REFRESH_TOKEN_EXPIRE_DAYS
     )
 
-    payload.update({"exp": expire})
+    payload.update({
+        "type": "refresh",
+        "iat": now,
+        "exp": expire,
+    })
 
     return jwt.encode(
         payload,
         SECRET_KEY,
-        algorithm=ALGORITHM
+        algorithm=ALGORITHM,
     )
+
+
+def decode_token(token: str):
+    """
+    Decode and verify a JWT token.
+    Returns the payload if valid, otherwise None.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+        return payload
+    except JWTError:
+        return None

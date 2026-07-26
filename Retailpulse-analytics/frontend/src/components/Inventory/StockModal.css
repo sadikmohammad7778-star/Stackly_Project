@@ -1,0 +1,45 @@
+.modal-overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,.4);
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:1000;
+}
+
+.stock-modal{
+background:#fff;
+padding:25px;
+border-radius:10px;
+width:420px;
+display:flex;
+flex-direction:column;
+gap:15px;
+}
+
+.stock-modal input,
+.stock-modal select,
+.stock-modal textarea{
+padding:10px;
+border:1px solid #ddd;
+border-radius:6px;
+}
+
+.modal-buttons{
+display:flex;
+justify-content:flex-end;
+gap:10px;
+}
+
+.modal-buttons button{
+padding:10px 18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#2563eb;
+color:white;
+}

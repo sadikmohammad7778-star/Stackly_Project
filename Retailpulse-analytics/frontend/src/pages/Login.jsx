@@ -21,7 +21,6 @@ export default function Login() {
       [e.target.name]: e.target.value,
     }));
 
-    // Clear error when user starts typing
     setError("");
   };
 
@@ -43,6 +42,12 @@ export default function Login() {
         response.refresh_token
       );
 
+      // Save Logged-in User
+      localStorage.setItem(
+        "user",
+        JSON.stringify(response.user)
+      );
+
       // Redirect to Dashboard
       navigate("/dashboard", { replace: true });
 
@@ -56,10 +61,15 @@ export default function Login() {
 
   return (
     <div className="login-container">
-      <form className="login-card" onSubmit={handleSubmit}>
+      <form
+        className="login-card"
+        onSubmit={handleSubmit}
+      >
         <h2>RetailPulse Analytics</h2>
 
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <p className="error">{error}</p>
+        )}
 
         <input
           type="email"
@@ -85,7 +95,9 @@ export default function Login() {
 
         <p className="signup-link">
           Don't have an account?{" "}
-          <span onClick={() => navigate("/signup")}>
+          <span
+            onClick={() => navigate("/signup")}
+          >
             Sign Up
           </span>
         </p>

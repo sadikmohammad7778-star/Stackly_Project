@@ -6,7 +6,11 @@ from app.models.company import Company
 from app.schemas.department_schema import DepartmentCreate, DepartmentUpdate
 
 
-def create_department(db: Session, department: DepartmentCreate):
+def create_department(
+    db: Session,
+    department: DepartmentCreate,
+    user_id: int,
+):
     company = db.query(Company).filter(
         Company.id == department.company_id
     ).first()
@@ -34,9 +38,14 @@ def create_department(db: Session, department: DepartmentCreate):
     db.commit()
     db.refresh(new_department)
 
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="CREATE",
+        module="Department",
+    )
+
     return new_department
-
-
 def get_all_departments(db: Session):
     return db.query(Department).all()
 
@@ -58,7 +67,8 @@ def get_department_by_id(db: Session, department_id: int):
 def update_department(
     db: Session,
     department_id: int,
-    department: DepartmentUpdate
+    department: DepartmentUpdate,
+    user_id: int,
 ):
     existing = db.query(Department).filter(
         Department.id == department_id
@@ -76,10 +86,20 @@ def update_department(
     db.commit()
     db.refresh(existing)
 
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="UPDATE",
+        module="Department",
+    )
+
     return existing
 
-
-def delete_department(db: Session, department_id: int):
+def delete_department(
+    db: Session,
+    department_id: int,
+    user_id: int,
+):
     department = db.query(Department).filter(
         Department.id == department_id
     ).first()
@@ -92,6 +112,13 @@ def delete_department(db: Session, department_id: int):
 
     db.delete(department)
     db.commit()
+
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="DELETE",
+        module="Department",
+    )
 
     return {
         "message": "Department deleted successfully."

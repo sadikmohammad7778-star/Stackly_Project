@@ -1,7 +1,11 @@
 from datetime import datetime
 
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+from app.services.notification_service import create_notification
+from app.services.audit_service import create_audit_log
 
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
@@ -13,8 +17,6 @@ from app.schemas.sale_schema import (
     SaleUpdate,
     SalesSummary,
 )
-
-
 # --------------------------------------------------
 # Generate Invoice Number
 # --------------------------------------------------
@@ -41,7 +43,7 @@ def generate_invoice_number(db: Session):
 def create_sale(
     db: Session,
     sale: SaleCreate,
-    created_by: int = None,
+    user_id: int,
 ):
 
     invoice_number = generate_invoice_number(db)
@@ -53,34 +55,54 @@ def create_sale(
         sales_channel=sale.sales_channel,
         payment_method=sale.payment_method,
         total_amount=0,
-        created_by=created_by,
+        created_by=user_id,
     )
 
     db.add(db_sale)
     db.commit()
     db.refresh(db_sale)
 
+    create_audit_log(
+        db=db,
+        company_id=sale.company_id,
+        user_id=user_id,
+        module="Sales",
+        action="CREATE",
+        description=f"Created Sale #{sale.id}",
+    )
+
     grand_total = 0
 
     for item in sale.items:
 
-        product = db.query(Product).filter(
-            Product.id == item.product_id
-        ).first()
+        product = (
+            db.query(Product)
+            .filter(Product.id == item.product_id)
+            .first()
+        )
 
         if product is None:
-            raise Exception("Product not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Product not found"
+            )
 
-        category = db.query(Category).filter(
-            Category.id == item.category_id
-        ).first()
+        category = (
+            db.query(Category)
+            .filter(Category.id == item.category_id)
+            .first()
+        )
 
         if category is None:
-            raise Exception("Category not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Category not found"
+            )
 
         if product.stock_quantity < item.quantity:
-            raise Exception(
-                f"Insufficient stock for product '{product.name}'"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Insufficient stock for product '{product.name}'"
             )
 
         item_total = (
@@ -102,7 +124,6 @@ def create_sale(
 
         db.add(sale_item)
 
-        # Update Inventory
         product.stock_quantity -= item.quantity
 
         if product.stock_quantity <= 0:
@@ -111,6 +132,22 @@ def create_sale(
             if hasattr(product, "status"):
                 product.status = "Out of Stock"
 
+            create_notification(
+                db=db,
+                title="Out of Stock",
+                message=f"{product.name} is out of stock.",
+                type="danger",
+            )
+
+        elif product.stock_quantity <= 10:
+
+            create_notification(
+                db=db,
+                title="Low Stock",
+                message=f"{product.name} has only {product.stock_quantity} items left.",
+                type="warning",
+            )
+
         grand_total += item_total
 
     db_sale.total_amount = grand_total
@@ -118,14 +155,33 @@ def create_sale(
     db.commit()
     db.refresh(db_sale)
 
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="CREATE",
+        module="Sales",
+    )
+
+    create_notification(
+        db=db,
+        title="New Sale",
+        message=f"Invoice {db_sale.invoice_number} created successfully. Total ₹{db_sale.total_amount}",
+        type="success",
+    )
+
     return db_sale
+
 
 
 # --------------------------------------------------
 # Get All Sales
 # --------------------------------------------------
 def get_all_sales(db: Session):
-    return db.query(Sale).all()
+    return (
+        db.query(Sale)
+        .order_by(Sale.id.desc())
+        .all()
+    )
 
 
 # --------------------------------------------------
@@ -135,26 +191,35 @@ def get_sale_by_id(
     db: Session,
     sale_id: int,
 ):
-    return (
+    sale = (
         db.query(Sale)
         .filter(Sale.id == sale_id)
         .first()
     )
 
+    if sale is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Sale not found",
+        )
 
-# --------------------------------------------------
+    return sale
+
 # Update Sale
-# --------------------------------------------------
 def update_sale(
     db: Session,
     sale_id: int,
     sale: SaleUpdate,
+    user_id: int,
 ):
 
     db_sale = get_sale_by_id(db, sale_id)
 
     if db_sale is None:
-        return None
+        raise HTTPException(
+            status_code=404,
+            detail="Sale not found"
+        )
 
     update_data = sale.model_dump(exclude_unset=True)
 
@@ -164,31 +229,58 @@ def update_sale(
     db.commit()
     db.refresh(db_sale)
 
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="UPDATE",
+        module="Sales",
+    )
+    create_audit_log(
+        db=db,
+        company_id=sale.company_id,
+        user_id=user_id,
+        module="Sales",
+        action="UPDATE",
+        description=f"Updated Sale #{sale.id}",
+    )
+
     return db_sale
-
-
-# --------------------------------------------------
 # Delete Sale
-# --------------------------------------------------
+
 def delete_sale(
     db: Session,
     sale_id: int,
+    user_id: int,
 ):
 
     db_sale = get_sale_by_id(db, sale_id)
 
     if db_sale is None:
-        return None
+        raise HTTPException(
+            status_code=404,
+            detail="Sale not found"
+        )
+
+    # Save values before deleting
+    company_id = db_sale.company_id
+    deleted_sale_id = db_sale.id
 
     db.delete(db_sale)
     db.commit()
 
+    create_audit_log(
+        db=db,
+        company_id=company_id,
+        user_id=user_id,
+        module="Sales",
+        action="DELETE",
+        description=f"Deleted Sale #{deleted_sale_id}",
+    )
+
     return True
 
-
-# --------------------------------------------------
 # Search Sales
-# --------------------------------------------------
+
 def search_sales(
     db: Session,
     keyword: str,
@@ -202,8 +294,6 @@ def search_sales(
         )
         .all()
     )
-
-
 # --------------------------------------------------
 # Dashboard Summary
 # --------------------------------------------------

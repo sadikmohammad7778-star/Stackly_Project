@@ -12,6 +12,7 @@ import {
 import StatCard from "./StatCard";
 
 export default function DashboardCards({ data }) {
+
   const cards = [
     {
       title: "Companies",
@@ -45,7 +46,7 @@ export default function DashboardCards({ data }) {
     },
     {
       title: "Revenue",
-      value: `₹${Number(data?.total_revenue ?? 0).toLocaleString()}`,
+      value: `₹${Number(data?.total_revenue ?? 0).toLocaleString("en-IN")}`,
       color: "#22C55E",
       icon: <FiDollarSign />,
     },
@@ -65,8 +66,14 @@ export default function DashboardCards({ data }) {
 
   return (
     <div className="cards-grid">
-      {cards.map((card, index) => (
-        <StatCard key={index} {...card} />
+      {cards.map((card) => (
+        <StatCard
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          color={card.color}
+          icon={card.icon}
+        />
       ))}
     </div>
   );

@@ -29,3 +29,9 @@ class Company(Base):
     back_populates="company",
     cascade="all, delete"
     )
+
+    inventories = relationship(
+    "Inventory",
+    back_populates="company",
+    cascade="all, delete"
+)

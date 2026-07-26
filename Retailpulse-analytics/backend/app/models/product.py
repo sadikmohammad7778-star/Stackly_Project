@@ -16,6 +16,7 @@ class Product(Base):
     name = Column(String(150), nullable=False)
     sku = Column(String(100), unique=True, nullable=False)
     description = Column(String(500), nullable=True)
+    brand = Column(String(100), nullable=False)
 
     unit_price = Column(Float, nullable=False)
     stock_quantity = Column(Integer, default=0)
@@ -28,3 +29,9 @@ class Product(Base):
 
     company = relationship("Company")
     category = relationship("Category")
+    inventory = relationship(
+    "Inventory",
+    back_populates="product",
+    uselist=False,
+    cascade="all, delete"
+)

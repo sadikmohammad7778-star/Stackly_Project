@@ -9,6 +9,7 @@ class ProductBase(BaseModel):
     name: str
     sku: str
     description: Optional[str] = None
+    brand: str
     unit_price: float
     stock_quantity: int
     status: str = "In Stock"
@@ -24,6 +25,9 @@ class ProductUpdate(BaseModel):
     name: Optional[str] = None
     sku: Optional[str] = None
     description: Optional[str] = None
+
+    brand: Optional[str] = None
+
     unit_price: Optional[float] = None
     stock_quantity: Optional[int] = None
     status: Optional[str] = None

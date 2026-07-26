@@ -21,21 +21,52 @@ export default function Dashboard() {
     out_of_stock_products: 0,
   });
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     loadDashboard();
   }, []);
 
   const loadDashboard = async () => {
     try {
+      setLoading(true);
+      setError("");
+
       const data = await getDashboardData();
+
       setDashboardData(data);
-    } catch (error) {
-      console.error("Error loading dashboard:", error);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load dashboard.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="dashboard-loading">
+        <h2>Loading Dashboard...</h2>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-error">
+        <h2>{error}</h2>
+
+        <button onClick={loadDashboard}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-page">
+
       <div className="dashboard-header">
         <div>
           <h1>RetailPulse Dashboard</h1>
@@ -43,11 +74,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Dashboard Cards */}
       <DashboardCards data={dashboardData} />
 
-      {/* Charts */}
       <div className="chart-section">
+
         <div className="chart-card">
           <h3>Monthly Revenue</h3>
           <SalesChart />
@@ -57,13 +87,14 @@ export default function Dashboard() {
           <h3>Sales by Category</h3>
           <DepartmentChart />
         </div>
+
       </div>
 
-      {/* Top Products */}
       <div className="table-card">
         <h3>Top Selling Products</h3>
         <EmployeeTable />
       </div>
+
     </div>
   );
 }

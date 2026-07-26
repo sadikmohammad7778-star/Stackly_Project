@@ -4,27 +4,81 @@ import {
   FiGrid,
   FiShoppingBag,
   FiShoppingCart,
+  FiArchive,
   FiBarChart2,
   FiFileText,
+  FiShield,
   FiSettings,
   FiLogOut,
 } from "react-icons/fi";
-import { NavLink } from "react-router-dom";
+
+import { NavLink, useNavigate } from "react-router-dom";
 import "./Sidebar.css";
 
 const menu = [
-  { name: "Dashboard", path: "/dashboard", icon: <FiHome /> },
-  { name: "Companies", path: "/companies", icon: <FiBriefcase /> },
-  { name: "Categories", path: "/categories", icon: <FiGrid /> },
-  { name: "Products", path: "/products", icon: <FiShoppingBag /> },
-  { name: "Sales", path: "/sales", icon: <FiShoppingCart /> },
-  { name: "Analytics", path: "/analytics", icon: <FiBarChart2 /> },
-  { name: "Reports", path: "/reports", icon: <FiFileText /> },
-  { name: "Settings", path: "/settings", icon: <FiSettings /> },
-  
+  {
+    name: "Dashboard",
+    path: "/dashboard",
+    icon: <FiHome />,
+  },
+  {
+    name: "Companies",
+    path: "/companies",
+    icon: <FiBriefcase />,
+  },
+  {
+    name: "Categories",
+    path: "/categories",
+    icon: <FiGrid />,
+  },
+  {
+    name: "Products",
+    path: "/products",
+    icon: <FiShoppingBag />,
+  },
+  {
+    name: "Sales",
+    path: "/sales",
+    icon: <FiShoppingCart />,
+  },
+  {
+    name: "Inventory",
+    path: "/inventory",
+    icon: <FiArchive />,
+  },
+  {
+    name: "Analytics",
+    path: "/analytics",
+    icon: <FiBarChart2 />,
+  },
+  {
+    name: "Reports",
+    path: "/reports",
+    icon: <FiFileText />,
+  },
+  {
+    name: "Audit Logs",
+    path: "/audit",
+    icon: <FiShield />,
+  },
+  {
+    name: "Settings",
+    path: "/settings",
+    icon: <FiSettings />,
+  },
 ];
 
 export default function Sidebar() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+
+    navigate("/login");
+  };
+
   return (
     <aside className="sidebar">
       <div>
@@ -49,9 +103,12 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <button className="logout">
+      <button
+        className="logout"
+        onClick={handleLogout}
+      >
         <FiLogOut />
-        Logout
+        <span>Logout</span>
       </button>
     </aside>
   );

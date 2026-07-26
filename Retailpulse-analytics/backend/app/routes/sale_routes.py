@@ -1,9 +1,10 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.config.database import get_db
+from app.config.dependency import get_db, get_current_user
+from app.models.user import User
 
 from app.schemas.sale_schema import (
     SaleCreate,
@@ -16,7 +17,7 @@ from app.services import sale_service
 
 router = APIRouter(
     prefix="/sales",
-    tags=["Sales"]
+    tags=["Sales"],
 )
 
 
@@ -27,15 +28,22 @@ router = APIRouter(
 def create_sale(
     sale: SaleCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return sale_service.create_sale(db, sale)
+    return sale_service.create_sale(
+        db,
+        sale,
+        current_user.id,
+    )
 
 
 # -----------------------------
 # Get All Sales
 # -----------------------------
 @router.get("/", response_model=List[SaleResponse])
-def get_sales(db: Session = Depends(get_db)):
+def get_sales(
+    db: Session = Depends(get_db),
+):
     return sale_service.get_all_sales(db)
 
 
@@ -47,15 +55,10 @@ def get_sale(
     sale_id: int,
     db: Session = Depends(get_db),
 ):
-    sale = sale_service.get_sale_by_id(db, sale_id)
-
-    if not sale:
-        raise HTTPException(
-            status_code=404,
-            detail="Sale not found",
-        )
-
-    return sale
+    return sale_service.get_sale_by_id(
+        db,
+        sale_id,
+    )
 
 
 # -----------------------------
@@ -66,20 +69,14 @@ def update_sale(
     sale_id: int,
     sale: SaleUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    updated = sale_service.update_sale(
+    return sale_service.update_sale(
         db,
         sale_id,
         sale,
+        current_user.id,
     )
-
-    if not updated:
-        raise HTTPException(
-            status_code=404,
-            detail="Sale not found",
-        )
-
-    return updated
 
 
 # -----------------------------
@@ -89,18 +86,13 @@ def update_sale(
 def delete_sale(
     sale_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    deleted = sale_service.delete_sale(db, sale_id)
-
-    if not deleted:
-        raise HTTPException(
-            status_code=404,
-            detail="Sale not found",
-        )
-
-    return {
-        "message": "Sale deleted successfully"
-    }
+    return sale_service.delete_sale(
+        db,
+        sale_id,
+        current_user.id,
+    )
 
 
 # -----------------------------

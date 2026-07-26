@@ -7,11 +7,13 @@ from app.schemas.attendance_schema import (
     AttendanceCreate,
     AttendanceUpdate,
 )
+from app.services.audit_service import create_audit_log
 
 
 def create_attendance(
     db: Session,
-    attendance: AttendanceCreate
+    attendance: AttendanceCreate,
+    user_id: int,
 ):
     employee = (
         db.query(Employee)
@@ -31,8 +33,14 @@ def create_attendance(
     db.commit()
     db.refresh(new_attendance)
 
-    return new_attendance
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="CREATE",
+        module="Attendance",
+    )
 
+    return new_attendance
 
 def get_all_attendance(db: Session):
     return db.query(Attendance).all()
@@ -60,7 +68,8 @@ def get_attendance_by_id(
 def update_attendance(
     db: Session,
     attendance_id: int,
-    attendance: AttendanceUpdate
+    attendance: AttendanceUpdate,
+    user_id: int,
 ):
     existing = (
         db.query(Attendance)
@@ -80,12 +89,20 @@ def update_attendance(
     db.commit()
     db.refresh(existing)
 
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="UPDATE",
+        module="Attendance",
+    )
+
     return existing
 
 
 def delete_attendance(
     db: Session,
-    attendance_id: int
+    attendance_id: int,
+    user_id: int,
 ):
     attendance = (
         db.query(Attendance)
@@ -101,6 +118,13 @@ def delete_attendance(
 
     db.delete(attendance)
     db.commit()
+
+    create_audit_log(
+        db=db,
+        user_id=user_id,
+        action="DELETE",
+        module="Attendance",
+    )
 
     return {
         "message": "Attendance deleted successfully."

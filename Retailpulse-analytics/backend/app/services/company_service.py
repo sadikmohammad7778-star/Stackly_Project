@@ -2,10 +2,15 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.company import Company
-from app.schemas.company_schema import CompanyCreate,CompanyUpdate
+from app.schemas.company_schema import CompanyCreate, CompanyUpdate
 from app.services.audit_service import create_audit_log
 
-def create_company(db: Session, company: CompanyCreate):
+
+def create_company(
+    db: Session,
+    company: CompanyCreate,
+    user_id: int,
+):
     existing_company = (
         db.query(Company)
         .filter(Company.email == company.email)
@@ -30,20 +35,18 @@ def create_company(db: Session, company: CompanyCreate):
     db.refresh(new_company)
 
     create_audit_log(
-    db=db,
-    user_id=1,      # Temporary for now
-    action="CREATE",
-    module="Company"
+        db=db,
+        user_id=user_id,
+        action="CREATE",
+        module="Company",
     )
-    
-    return new_company
 
-    
+    return new_company
 
 
 def get_all_companies(db: Session):
-    companies = db.query(Company).all()
-    return companies
+    return db.query(Company).all()
+
 
 def get_company_by_id(db: Session, company_id: int):
     company = (
@@ -60,7 +63,12 @@ def get_company_by_id(db: Session, company_id: int):
 
     return company
 
-def update_company(db: Session, company_id: int, company: CompanyUpdate):
+
+def update_company(
+    db: Session,
+    company_id: int,
+    company: CompanyUpdate,
+):
     existing_company = (
         db.query(Company)
         .filter(Company.id == company_id)
@@ -77,7 +85,7 @@ def update_company(db: Session, company_id: int, company: CompanyUpdate):
         db.query(Company)
         .filter(
             Company.email == company.email,
-            Company.id != company_id
+            Company.id != company_id,
         )
         .first()
     )
