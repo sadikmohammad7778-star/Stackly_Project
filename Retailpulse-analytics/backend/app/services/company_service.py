@@ -36,14 +36,14 @@ def create_company(
 
     create_audit_log(
         db=db,
+        company_id=new_company.id,
         user_id=user_id,
-        action="CREATE",
         module="Company",
+        action="CREATE",
+        description=f"Created company '{new_company.company_name}'",
     )
 
     return new_company
-
-
 def get_all_companies(db: Session):
     return db.query(Company).all()
 

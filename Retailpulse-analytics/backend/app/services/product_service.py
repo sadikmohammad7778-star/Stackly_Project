@@ -16,6 +16,7 @@ def create_product(
     product: ProductCreate,
     user_id: int,
 ):
+    # Check category exists
     category = (
         db.query(Category)
         .filter(Category.id == product.category_id)
@@ -28,11 +29,24 @@ def create_product(
             detail="Category not found."
         )
 
+    # Generate SKU automatically
+    last_product = (
+        db.query(Product)
+        .order_by(Product.id.desc())
+        .first()
+    )
+
+    if last_product:
+        sku = f"SKU-{last_product.id + 1:05d}"
+    else:
+        sku = "SKU-00001"
+
+    # Create Product
     db_product = Product(
         company_id=product.company_id,
         category_id=product.category_id,
         name=product.name,
-        sku=product.sku,
+        sku=sku,
         description=product.description,
         brand=product.brand,
         unit_price=product.unit_price,
@@ -45,18 +59,17 @@ def create_product(
     db.commit()
     db.refresh(db_product)
 
+    # Audit Log
     create_audit_log(
         db=db,
         company_id=db_product.company_id,
         user_id=user_id,
         module="Product",
         action="CREATE",
-        description=f"Created product '{db_product.name}'",
+        description=f"Created product '{db_product.name}' (SKU: {db_product.sku})",
     )
 
     return db_product
-
-
 # -----------------------------
 # Get All Products
 # -----------------------------

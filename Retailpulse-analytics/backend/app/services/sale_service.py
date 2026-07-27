@@ -63,13 +63,13 @@ def create_sale(
     db.refresh(db_sale)
 
     create_audit_log(
-        db=db,
-        company_id=sale.company_id,
-        user_id=user_id,
-        module="Sales",
-        action="CREATE",
-        description=f"Created Sale #{sale.id}",
-    )
+    db=db,
+    company_id=db_sale.company_id,
+    user_id=user_id,
+    module="Sales",
+    action="CREATE",
+    description=f"Created Sale #{db_sale.id}",
+)
 
     grand_total = 0
 
@@ -155,12 +155,6 @@ def create_sale(
     db.commit()
     db.refresh(db_sale)
 
-    create_audit_log(
-        db=db,
-        user_id=user_id,
-        action="CREATE",
-        module="Sales",
-    )
 
     create_notification(
         db=db,

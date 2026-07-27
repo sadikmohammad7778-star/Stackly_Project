@@ -78,22 +78,22 @@ def get_monthly_sales(db: Session):
 
     results = (
         db.query(
-            func.date_format(
+            func.to_char(
                 Sale.created_at,
-                "%Y-%m"
+                "YYYY-MM"
             ).label("month"),
             func.sum(Sale.total_amount).label("revenue"),
         )
         .group_by(
-            func.date_format(
+            func.to_char(
                 Sale.created_at,
-                "%Y-%m"
+                "YYYY-MM"
             )
         )
         .order_by(
-            func.date_format(
+            func.to_char(
                 Sale.created_at,
-                "%Y-%m"
+                "YYYY-MM"
             )
         )
         .all()
@@ -106,7 +106,6 @@ def get_monthly_sales(db: Session):
         }
         for row in results
     ]
-
 
 def get_top_products(db: Session):
 

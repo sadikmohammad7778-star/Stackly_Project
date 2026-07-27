@@ -7,7 +7,6 @@ class ProductBase(BaseModel):
     company_id: int
     category_id: int
     name: str
-    sku: str
     description: Optional[str] = None
     brand: str
     unit_price: float
@@ -23,11 +22,8 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     name: Optional[str] = None
-    sku: Optional[str] = None
     description: Optional[str] = None
-
     brand: Optional[str] = None
-
     unit_price: Optional[float] = None
     stock_quantity: Optional[int] = None
     status: Optional[str] = None
@@ -36,6 +32,7 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(ProductBase):
     id: int
+    sku: str
     created_at: datetime
     updated_at: datetime
 

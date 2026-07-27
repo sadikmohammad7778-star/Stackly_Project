@@ -170,7 +170,7 @@ export default function SaleModal({
 
           {companies.map((company) => (
             <option key={company.id} value={company.id}>
-              {company.name}
+              {company.company_name}
             </option>
           ))}
         </select>

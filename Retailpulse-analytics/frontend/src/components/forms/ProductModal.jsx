@@ -11,8 +11,8 @@ export default function ProductModal({
     company_id: "",
     category_id: "",
     name: "",
-    sku: "",
     description: "",
+    brand: "",
     unit_price: "",
     stock_quantity: "",
     status: "In Stock",
@@ -61,6 +61,7 @@ export default function ProductModal({
       resetForm();
       onSuccess();
       onClose();
+
     } catch (error) {
       console.error(error);
 
@@ -76,6 +77,7 @@ export default function ProductModal({
   return (
     <div className="modal-overlay">
       <div className="modal">
+
         <h2>Add Product</h2>
 
         <form onSubmit={handleSubmit}>
@@ -109,9 +111,9 @@ export default function ProductModal({
 
           <input
             type="text"
-            name="sku"
-            placeholder="SKU"
-            value={formData.sku}
+            name="brand"
+            placeholder="Brand"
+            value={formData.brand}
             onChange={handleChange}
             required
           />
@@ -142,7 +144,28 @@ export default function ProductModal({
             required
           />
 
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+          >
+            <option value="In Stock">In Stock</option>
+            <option value="Low Stock">Low Stock</option>
+            <option value="Out of Stock">Out of Stock</option>
+          </select>
+
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="is_active"
+              checked={formData.is_active}
+              onChange={handleChange}
+            />
+            Active
+          </label>
+
           <div className="modal-buttons">
+
             <button
               type="button"
               onClick={handleClose}
@@ -157,9 +180,11 @@ export default function ProductModal({
             >
               {loading ? "Saving..." : "Save Product"}
             </button>
+
           </div>
 
         </form>
+
       </div>
     </div>
   );

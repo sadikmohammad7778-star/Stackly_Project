@@ -1,11 +1,15 @@
-import { useState } from "react";
-import { createCategory } from "../../api/categoryApi";
+import { useEffect, useState } from "react";
+import {
+  createCategory,
+  updateCategory,
+} from "../../api/categoryApi";
 import "./CompanyModal.css";
 
 export default function CategoryModal({
   isOpen,
   onClose,
   onSuccess,
+  category,
 }) {
   const initialForm = {
     company_id: "",
@@ -15,6 +19,18 @@ export default function CategoryModal({
 
   const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (category) {
+      setFormData({
+        company_id: category.company_id || "",
+        name: category.name || "",
+        description: category.description || "",
+      });
+    } else {
+      setFormData(initialForm);
+    }
+  }, [category, isOpen]);
 
   if (!isOpen) return null;
 
@@ -42,17 +58,21 @@ export default function CategoryModal({
     setLoading(true);
 
     try {
-      await createCategory({
+      const payload = {
         ...formData,
         company_id: Number(formData.company_id),
-      });
+      };
 
-      alert("Category created successfully.");
+      if (category) {
+        await updateCategory(category.id, payload);
+        alert("Category updated successfully.");
+      } else {
+        await createCategory(payload);
+        alert("Category created successfully.");
+      }
 
       resetForm();
-
       onSuccess();
-
       onClose();
 
     } catch (error) {
@@ -60,7 +80,9 @@ export default function CategoryModal({
 
       alert(
         error.response?.data?.detail ||
-        "Failed to create category."
+        (category
+          ? "Failed to update category."
+          : "Failed to create category.")
       );
     } finally {
       setLoading(false);
@@ -69,10 +91,11 @@ export default function CategoryModal({
 
   return (
     <div className="modal-overlay">
-
       <div className="modal">
 
-        <h2>Add Category</h2>
+        <h2>
+          {category ? "Edit Category" : "Add Category"}
+        </h2>
 
         <form onSubmit={handleSubmit}>
 
@@ -115,7 +138,11 @@ export default function CategoryModal({
               type="submit"
               disabled={loading}
             >
-              {loading ? "Saving..." : "Save Category"}
+              {loading
+                ? "Saving..."
+                : category
+                ? "Update Category"
+                : "Save Category"}
             </button>
 
           </div>
@@ -123,7 +150,6 @@ export default function CategoryModal({
         </form>
 
       </div>
-
     </div>
   );
 }

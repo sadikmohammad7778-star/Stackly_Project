@@ -17,7 +17,12 @@ import {
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
+
   const [openModal, setOpenModal] = useState(false);
+
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -41,9 +46,11 @@ export default function Categories() {
 
     try {
       await deleteCategory(id);
-      loadCategories();
+      await loadCategories();
+      alert("Category deleted successfully.");
     } catch (error) {
       console.error("Error deleting category:", error);
+      alert("Failed to delete category.");
     }
   };
 
@@ -53,8 +60,8 @@ export default function Categories() {
         <h2>Categories</h2>
 
         <button onClick={() => setOpenModal(true)}>
-            <FiPlus />
-            Add Category
+          <FiPlus />
+          Add Category
         </button>
       </div>
 
@@ -82,10 +89,17 @@ export default function Categories() {
               categories.map((category) => (
                 <tr key={category.id}>
                   <td>{category.name}</td>
+
                   <td>{category.description || "-"}</td>
 
                   <td>
-                    <button className="edit">
+                    <button
+                      className="edit"
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setEditModalOpen(true);
+                      }}
+                    >
                       <FiEdit />
                     </button>
 
@@ -111,9 +125,22 @@ export default function Categories() {
           </tbody>
         </table>
       </div>
+
+      {/* Add Category Modal */}
       <CategoryModal
         isOpen={openModal}
         onClose={() => setOpenModal(false)}
+        onSuccess={loadCategories}
+      />
+
+      {/* Edit Category Modal */}
+      <CategoryModal
+        isOpen={editModalOpen}
+        category={selectedCategory}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedCategory(null);
+        }}
         onSuccess={loadCategories}
       />
     </div>
