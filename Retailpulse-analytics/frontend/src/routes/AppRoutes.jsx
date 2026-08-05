@@ -1,31 +1,48 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
 import DashboardLayout from "../layouts/DashboardLayout";
 
-// Authentication
+/* ================= Authentication ================= */
+
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 
-// Dashboard
+/* ================= Dashboard ================= */
+
 import Dashboard from "../pages/Dashboard";
 
-// Management Modules
+/* ================= Customer Module ================= */
+
+import Customers from "../pages/Customers";
+import CustomerAnalytics from "../pages/CustomerAnalytics";
+import CustomerProfile from "../pages/CustomerProfile";
+
+/* ================= Management Modules ================= */
+
 import Companies from "../pages/Companies";
 import Categories from "../pages/Categories";
 import Products from "../pages/Products";
 import Sales from "../pages/Sales";
+import Inventory from "../pages/Inventory";
 import Employees from "../pages/Employees";
 import Departments from "../pages/Departments";
 import Attendance from "../pages/Attendance";
-import Inventory from "../pages/Inventory";
+import DemandForecast from "../pages/DemandForecast";
 
-// Reports & Analytics
+/* ================= Reports ================= */
+
 import Reports from "../pages/Reports";
 import Analytics from "../pages/Analytics";
-import AuditLogs from "../pages/AuditLogs"; // <-- ADD THIS
+import AuditLogs from "../pages/AuditLogs";
 
-// Other Pages
+/* ================= Settings ================= */
+
 import Settings from "../pages/Settings";
 
 export default function AppRoutes() {
@@ -33,7 +50,8 @@ export default function AppRoutes() {
     <BrowserRouter>
       <Routes>
 
-        {/* Public Routes */}
+        {/* ================= Public Routes ================= */}
+
         <Route
           path="/"
           element={<Navigate to="/login" replace />}
@@ -49,7 +67,8 @@ export default function AppRoutes() {
           element={<Signup />}
         />
 
-        {/* Protected Routes */}
+        {/* ================= Protected Routes ================= */}
+
         <Route
           element={
             <ProtectedRoute>
@@ -57,47 +76,92 @@ export default function AppRoutes() {
             </ProtectedRoute>
           }
         >
+
           {/* Dashboard */}
+
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
 
-          {/* Management */}
+          {/* Companies */}
+
           <Route
             path="/companies"
             element={<Companies />}
           />
+
+          {/* Categories */}
 
           <Route
             path="/categories"
             element={<Categories />}
           />
 
+          {/* Products */}
+
           <Route
             path="/products"
             element={<Products />}
           />
+
+          {/* Sales */}
 
           <Route
             path="/sales"
             element={<Sales />}
           />
 
+          {/* Inventory */}
+
           <Route
             path="/inventory"
             element={<Inventory />}
           />
+
+          {/* Demand Forecast */}
+
+          <Route
+            path="/forecast"
+            element={<DemandForecast />}
+          />
+
+          {/* Customers */}
+
+          <Route
+            path="/customers"
+            element={<Customers />}
+          />
+
+          {/* Customer Analytics */}
+
+          <Route
+            path="/customers/dashboard"
+            element={<CustomerAnalytics />}
+          />
+
+          {/* Customer Profile */}
+
+          <Route
+            path="/customers/:id"
+            element={<CustomerProfile />}
+          />
+
+          {/* Employees */}
 
           <Route
             path="/employees"
             element={<Employees />}
           />
 
+          {/* Departments */}
+
           <Route
             path="/departments"
             element={<Departments />}
           />
+
+          {/* Attendance */}
 
           <Route
             path="/attendance"
@@ -105,10 +169,13 @@ export default function AppRoutes() {
           />
 
           {/* Reports */}
+
           <Route
             path="/reports"
             element={<Reports />}
           />
+
+          {/* Analytics */}
 
           <Route
             path="/analytics"
@@ -116,16 +183,26 @@ export default function AppRoutes() {
           />
 
           {/* Audit Logs */}
+
           <Route
             path="/audit"
             element={<AuditLogs />}
           />
 
           {/* Settings */}
+
           <Route
             path="/settings"
             element={<Settings />}
           />
+
+          {/* Fallback */}
+
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
+
         </Route>
 
       </Routes>

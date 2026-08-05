@@ -19,3 +19,9 @@ class Category(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     company = relationship("Company")
+
+    customer_purchase_summaries = relationship(
+    "CustomerPurchaseSummary",
+    back_populates="favorite_category",
+    )
+

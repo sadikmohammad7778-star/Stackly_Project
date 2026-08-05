@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.routing import APIRoute
+
 from app.config.database import engine, Base
 from app.config.exceptions import global_exception_handler
 
@@ -18,6 +20,8 @@ from app.models.sale import Sale
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement
 from app.models.notification import Notification
+from app.models.demand_forecast import DemandForecast
+from app.models.forecast_history import ForecastHistory
 
 # Import Routes
 from app.routes.company_routes import router as company_router
@@ -36,6 +40,8 @@ from app.routes.inventory_routes import router as inventory_router
 from app.routes.notification_routes import router as notification_router
 from app.routes.export_routes import router as export_router
 from app.routes.audit_routes import router as audit_router
+from app.routes.customer_routes import router as customer_router
+from app.routes.demand_forecast_routes import router as demand_forecast_router
 
 # Create Database Tables
 Base.metadata.create_all(bind=engine)
@@ -78,17 +84,22 @@ app.include_router(inventory_router)
 app.include_router(notification_router)
 app.include_router(export_router)
 app.include_router(audit_router)
+app.include_router(customer_router)
+app.include_router(demand_forecast_router)
 
 
 @app.get("/routes")
 def list_routes():
-    return [
-        {
-            "path": route.path,
-            "methods": list(route.methods)
-        }
-        for route in app.routes
-    ]
+    routes = []
+
+    for route in app.routes:
+        if isinstance(route, APIRoute):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods),
+            })
+
+    return routes
 
 
 @app.get("/")

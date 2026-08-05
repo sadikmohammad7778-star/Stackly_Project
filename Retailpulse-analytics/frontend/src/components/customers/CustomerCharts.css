@@ -1,0 +1,80 @@
+.chart-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(500px,1fr));
+    gap:25px;
+    margin-top:30px;
+    width:100%;
+}
+
+.chart-card{
+    background:#ffffff;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+    transition:all .3s ease;
+    overflow:hidden;
+}
+
+.chart-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 20px rgba(0,0,0,.12);
+}
+
+.chart-card h3{
+    margin-bottom:20px;
+    color:#1e293b;
+    font-size:20px;
+    font-weight:600;
+}
+
+.recharts-responsive-container{
+    min-height:300px;
+}
+
+.customer-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.customer-table th{
+    background:#2563eb;
+    color:#fff;
+    padding:12px;
+    text-align:left;
+    font-size:15px;
+}
+
+.customer-table td{
+    padding:12px;
+    border-bottom:1px solid #e5e7eb;
+    font-size:14px;
+}
+
+.customer-table tr:hover{
+    background:#f8fafc;
+}
+
+.chart-loading{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:300px;
+    font-size:20px;
+    font-weight:600;
+    color:#2563eb;
+}
+
+@media (max-width:768px){
+
+    .chart-grid{
+        grid-template-columns:1fr;
+    }
+
+    .chart-card{
+        padding:15px;
+    }
+
+    .chart-card h3{
+        font-size:18px;
+    }
+}

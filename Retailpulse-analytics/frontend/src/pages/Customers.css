@@ -1,0 +1,268 @@
+/* ===================================
+   Customer Management
+=================================== */
+
+.companies-page{
+    padding:30px;
+    background:#f8fafc;
+    min-height:100vh;
+}
+
+/* Header */
+
+.companies-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.companies-header h2{
+    margin:0;
+    font-size:28px;
+    font-weight:700;
+    color:#1f2937;
+}
+
+/* Export */
+
+.customer-export{
+    display:flex;
+    gap:12px;
+}
+
+.customer-export button{
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:10px 18px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.3s;
+}
+
+.customer-export button:hover{
+    background:#1d4ed8;
+}
+
+/* Search */
+
+.customer-search{
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+
+    background:#fff;
+    padding:20px;
+    border-radius:12px;
+    margin-bottom:25px;
+
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+.customer-search input{
+    flex:2;
+    min-width:220px;
+}
+
+.customer-search select{
+    min-width:160px;
+}
+
+.customer-search input,
+.customer-search select{
+    height:45px;
+    padding:0 14px;
+
+    border:1px solid #d1d5db;
+    border-radius:8px;
+
+    font-size:14px;
+    background:#fff;
+    box-sizing:border-box;
+}
+
+.customer-search input:focus,
+.customer-search select:focus{
+    outline:none;
+    border-color:#2563eb;
+}
+
+/* Cards */
+
+.table-card{
+    background:#fff;
+    padding:25px;
+    margin-bottom:25px;
+
+    border-radius:12px;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+
+/* Form */
+
+.customer-form{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:18px;
+}
+
+.customer-form input,
+.customer-form select{
+    width:100%;
+    height:45px;
+
+    padding:0 14px;
+
+    border:1px solid #d1d5db;
+    border-radius:8px;
+
+    font-size:14px;
+    box-sizing:border-box;
+}
+
+.customer-form input:focus,
+.customer-form select:focus{
+    outline:none;
+    border-color:#2563eb;
+}
+
+.customer-form button{
+    height:45px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.3s;
+}
+
+.customer-form button[type="submit"]{
+    background:#2563eb;
+    color:#fff;
+}
+
+.customer-form button[type="submit"]:hover{
+    background:#1d4ed8;
+}
+
+.customer-form button[type="button"]{
+    background:#ef4444;
+    color:#fff;
+}
+
+.customer-form button[type="button"]:hover{
+    background:#dc2626;
+}
+
+/* Table */
+
+.customer-table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+.customer-table thead{
+    background:#f3f4f6;
+}
+
+.customer-table th,
+.customer-table td{
+    padding:16px;
+    text-align:left;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.customer-table th{
+    color:#374151;
+    font-weight:600;
+}
+
+.customer-table tbody tr:hover{
+    background:#f9fafb;
+}
+
+/* Name Button */
+
+.customer-table tbody td button:first-child{
+    background:none;
+    border:none;
+    color:#2563eb;
+    font-weight:600;
+    cursor:pointer;
+    padding:0;
+}
+
+/* Action Buttons */
+
+.customer-table td button{
+    margin-right:8px;
+}
+
+.customer-table td button:nth-child(2){
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.customer-table td button:nth-child(2):hover{
+    background:#1d4ed8;
+}
+
+.customer-table td button:nth-child(3){
+    background:#ef4444;
+    color:#fff;
+    border:none;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.customer-table td button:nth-child(3):hover{
+    background:#dc2626;
+}
+
+/* Responsive */
+
+@media (max-width:1100px){
+
+    .customer-form{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+}
+
+@media (max-width:768px){
+
+    .companies-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:20px;
+    }
+
+    .customer-search{
+        flex-direction:column;
+    }
+
+    .customer-search input,
+    .customer-search select{
+        width:100%;
+        min-width:100%;
+    }
+
+    .customer-form{
+        grid-template-columns:1fr;
+    }
+
+    .customer-export{
+        width:100%;
+    }
+
+    .customer-export button{
+        flex:1;
+    }
+
+}

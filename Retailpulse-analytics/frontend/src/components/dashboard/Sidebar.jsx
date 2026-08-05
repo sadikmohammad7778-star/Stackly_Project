@@ -5,6 +5,8 @@ import {
   FiShoppingBag,
   FiShoppingCart,
   FiArchive,
+  FiUsers,
+  FiTrendingUp,
   FiBarChart2,
   FiFileText,
   FiShield,
@@ -21,46 +23,85 @@ const menu = [
     path: "/dashboard",
     icon: <FiHome />,
   },
+
   {
     name: "Companies",
     path: "/companies",
     icon: <FiBriefcase />,
   },
+
   {
     name: "Categories",
     path: "/categories",
     icon: <FiGrid />,
   },
+
   {
     name: "Products",
     path: "/products",
     icon: <FiShoppingBag />,
   },
+
   {
     name: "Sales",
     path: "/sales",
     icon: <FiShoppingCart />,
   },
+
   {
     name: "Inventory",
     path: "/inventory",
     icon: <FiArchive />,
   },
+
+  // ==========================
+  // Demand Forecast
+  // ==========================
+
+  {
+    name: "Demand Forecast",
+    path: "/forecast",
+    icon: <FiTrendingUp />,
+  },
+
+  // ==========================
+  // Customer Module
+  // ==========================
+
+  {
+    name: "Customers",
+    path: "/customers",
+    icon: <FiUsers />,
+  },
+
+  {
+    name: "Customer Analytics",
+    path: "/customers/dashboard",
+    icon: <FiBarChart2 />,
+  },
+
+  // ==========================
+  // Analytics
+  // ==========================
+
   {
     name: "Analytics",
     path: "/analytics",
     icon: <FiBarChart2 />,
   },
+
   {
     name: "Reports",
     path: "/reports",
     icon: <FiFileText />,
   },
+
   {
     name: "Audit Logs",
     path: "/audit",
     icon: <FiShield />,
   },
+
   {
     name: "Settings",
     path: "/settings",
@@ -82,12 +123,14 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div>
+
         <div className="logo">
           <h2>RetailPulse</h2>
           <span>Analytics</span>
         </div>
 
         <nav>
+
           {menu.map((item) => (
             <NavLink
               key={item.path}
@@ -100,7 +143,9 @@ export default function Sidebar() {
               <span>{item.name}</span>
             </NavLink>
           ))}
+
         </nav>
+
       </div>
 
       <button
@@ -110,6 +155,7 @@ export default function Sidebar() {
         <FiLogOut />
         <span>Logout</span>
       </button>
+
     </aside>
   );
 }

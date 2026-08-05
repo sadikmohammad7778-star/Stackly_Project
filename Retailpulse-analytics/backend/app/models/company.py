@@ -34,4 +34,11 @@ class Company(Base):
     "Inventory",
     back_populates="company",
     cascade="all, delete"
-)
+    )
+
+    customers = relationship(
+    "Customer",
+    back_populates="company",
+    cascade="all, delete",
+   )
+

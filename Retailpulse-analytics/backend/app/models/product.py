@@ -27,11 +27,19 @@ class Product(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Relationships
     company = relationship("Company")
+
     category = relationship("Category")
+
     inventory = relationship(
-    "Inventory",
-    back_populates="product",
-    uselist=False,
-    cascade="all, delete"
-)
+        "Inventory",
+        back_populates="product",
+        uselist=False,
+        cascade="all, delete",
+    )
+
+    customer_purchase_summaries = relationship(
+        "CustomerPurchaseSummary",
+        back_populates="favorite_product",
+    )

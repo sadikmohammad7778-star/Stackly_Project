@@ -1,29 +1,36 @@
 from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.orm import Session
 
-from app.config.database import get_db
+from app.config.dependency import get_db, get_current_user
+
+from app.models.user import User
 from app.models.sale import Sale
 from app.models.product import Product
-from app.services.export_service import generate_excel
-
-router = APIRouter(
-    prefix="/export",
-    tags=["Export Reports"],
-)
-
 
 from app.services.export_service import (
     generate_excel,
     generate_pdf,
 )
 
+from app.services.demand_forecast_service import (
+    export_forecast_csv,
+    export_forecast_pdf,
+)
 
-# -----------------------------
-# Export Sales Report
-# -----------------------------
+router = APIRouter(
+    prefix="/export",
+    tags=["Export Reports"],
+)
+
+# ==========================================
+# Export Sales Report - Excel
+# ==========================================
+
 @router.get("/sales/excel")
-def export_sales_excel(db: Session = Depends(get_db)):
+def export_sales_excel(
+    db: Session = Depends(get_db),
+):
 
     sales = db.query(Sale).all()
 
@@ -45,13 +52,20 @@ def export_sales_excel(db: Session = Depends(get_db)):
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": "attachment; filename=Sales_Report.xlsx"
+            "Content-Disposition":
+            "attachment; filename=Sales_Report.xlsx"
         },
     )
 
 
+# ==========================================
+# Export Sales Report - PDF
+# ==========================================
+
 @router.get("/sales/pdf")
-def export_sales_pdf(db: Session = Depends(get_db)):
+def export_sales_pdf(
+    db: Session = Depends(get_db),
+):
 
     sales = db.query(Sale).all()
 
@@ -79,11 +93,16 @@ def export_sales_pdf(db: Session = Depends(get_db)):
             "attachment; filename=Sales_Report.pdf"
         },
     )
-# -----------------------------
-# Export Inventory Report
-# -----------------------------
+
+
+# ==========================================
+# Export Inventory Report - Excel
+# ==========================================
+
 @router.get("/inventory/excel")
-def export_inventory_excel(db: Session = Depends(get_db)):
+def export_inventory_excel(
+    db: Session = Depends(get_db),
+):
 
     products = db.query(Product).all()
 
@@ -107,14 +126,20 @@ def export_inventory_excel(db: Session = Depends(get_db)):
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-            "Content-Disposition": "attachment; filename=Inventory_Report.xlsx"
+            "Content-Disposition":
+            "attachment; filename=Inventory_Report.xlsx"
         },
     )
 
 
+# ==========================================
+# Export Inventory Report - PDF
+# ==========================================
 
 @router.get("/inventory/pdf")
-def export_inventory_pdf(db: Session = Depends(get_db)):
+def export_inventory_pdf(
+    db: Session = Depends(get_db),
+):
 
     products = db.query(Product).all()
 
@@ -140,5 +165,55 @@ def export_inventory_pdf(db: Session = Depends(get_db)):
         headers={
             "Content-Disposition":
             "attachment; filename=Inventory_Report.pdf"
+        },
+    )
+
+
+# ==========================================
+# Export Demand Forecast - CSV
+# ==========================================
+
+@router.get("/forecast/csv")
+def export_forecast_csv_report(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    csv_data = export_forecast_csv(
+        db=db,
+        company_id=current_user.company_id,
+    )
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition":
+            "attachment; filename=Demand_Forecast_Report.csv"
+        },
+    )
+
+
+# ==========================================
+# Export Demand Forecast - PDF
+# ==========================================
+
+@router.get("/forecast/pdf")
+def export_forecast_pdf_report(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+
+    pdf_data = export_forecast_pdf(
+        db=db,
+        company_id=current_user.company_id,
+    )
+
+    return Response(
+        content=pdf_data,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition":
+            "attachment; filename=Demand_Forecast_Report.pdf"
         },
     )
