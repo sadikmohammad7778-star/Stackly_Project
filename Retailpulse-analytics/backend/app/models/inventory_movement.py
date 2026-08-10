@@ -8,7 +8,11 @@ from app.config.database import Base
 class InventoryMovement(Base):
     __tablename__ = "inventory_movements"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     inventory_id = Column(
         Integer,
@@ -16,23 +20,44 @@ class InventoryMovement(Base):
         nullable=False
     )
 
-    movement_type = Column(String(50), nullable=False)
+    movement_type = Column(
+        String(50),
+        nullable=False
+    )
 
-    quantity_changed = Column(Integer, nullable=False)
+    quantity_changed = Column(
+        Integer,
+        nullable=False
+    )
 
-    previous_quantity = Column(Integer, nullable=False)
+    previous_quantity = Column(
+        Integer,
+        nullable=False
+    )
 
-    updated_quantity = Column(Integer, nullable=False)
+    updated_quantity = Column(
+        Integer,
+        nullable=False
+    )
 
-    reason = Column(String(255), nullable=False)
+    reason = Column(
+        String(255),
+        nullable=False
+    )
 
-    remarks = Column(String(500))
+    remarks = Column(
+        String(500)
+    )
 
-    performed_by = Column(Integer)
+    performed_by = Column(
+        Integer,
+        nullable=True
+    )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        default=datetime.utcnow,
+        nullable=False
     )
 
     inventory = relationship(

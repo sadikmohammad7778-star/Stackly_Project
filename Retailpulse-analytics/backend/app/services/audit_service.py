@@ -24,8 +24,10 @@ def create_audit_log(
     )
 
     db.add(log)
-    db.commit()
-    db.refresh(log)
+
+    # Do NOT commit here.
+    # The calling service controls the transaction.
+    db.flush()
 
     return log
 
@@ -36,7 +38,11 @@ def get_audit_logs(
 ):
     return (
         db.query(AuditLog)
-        .filter(AuditLog.company_id == company_id)
-        .order_by(AuditLog.created_at.desc())
+        .filter(
+            AuditLog.company_id == company_id
+        )
+        .order_by(
+            AuditLog.created_at.desc()
+        )
         .all()
     )

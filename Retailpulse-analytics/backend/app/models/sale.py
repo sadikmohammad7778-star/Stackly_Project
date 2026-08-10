@@ -32,6 +32,7 @@ class Sale(Base):
         String(50),
         unique=True,
         nullable=False,
+        index=True,
     )
 
     # Customer Relation
@@ -49,6 +50,7 @@ class Sale(Base):
     sale_date = Column(
         DateTime,
         default=datetime.utcnow,
+        nullable=False,
     )
 
     sales_channel = Column(
@@ -61,31 +63,58 @@ class Sale(Base):
         nullable=False,
     )
 
+    discount = Column(
+        Float,
+        default=0,
+        nullable=False,
+    )
+
+    tax = Column(
+        Float,
+        default=0,
+        nullable=False,
+    )
+
     total_amount = Column(
         Float,
         default=0,
+        nullable=False,
+    )
+
+    status = Column(
+        String(30),
+        default="Paid",
+        nullable=False,
     )
 
     created_by = Column(
         Integer,
         ForeignKey("users.id"),
+        nullable=True,
     )
 
     created_at = Column(
         DateTime,
         default=datetime.utcnow,
+        nullable=False,
     )
 
     updated_at = Column(
         DateTime,
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
+        nullable=False,
     )
 
     # Relationships
-    company = relationship("Company")
 
-    user = relationship("User")
+    company = relationship(
+        "Company",
+    )
+
+    user = relationship(
+        "User",
+    )
 
     customer = relationship(
         "Customer",

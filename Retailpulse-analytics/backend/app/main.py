@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from fastapi.routing import APIRoute
 
 from app.config.database import engine, Base
 from app.config.exceptions import global_exception_handler
 
+
+# ============================================================
 # Import Models
+# ============================================================
+
 from app.models.company import Company
 from app.models.user import User
 from app.models.refresh_token import RefreshToken
@@ -17,13 +20,19 @@ from app.models.attendance import Attendance
 from app.models.category import Category
 from app.models.product import Product
 from app.models.sale import Sale
+from app.models.sale_item import SaleItem
+from app.models.customer import Customer
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement
 from app.models.notification import Notification
 from app.models.demand_forecast import DemandForecast
 from app.models.forecast_history import ForecastHistory
 
+
+# ============================================================
 # Import Routes
+# ============================================================
+
 from app.routes.company_routes import router as company_router
 from app.routes.auth_routes import router as auth_router
 from app.routes.employee_routes import router as employee_router
@@ -43,20 +52,41 @@ from app.routes.audit_routes import router as audit_router
 from app.routes.customer_routes import router as customer_router
 from app.routes.demand_forecast_routes import router as demand_forecast_router
 
+
+# ============================================================
 # Create Database Tables
+# ============================================================
+
 Base.metadata.create_all(bind=engine)
+
+
+# ============================================================
+# Create FastAPI Application
+# ============================================================
 
 app = FastAPI(
     title="RetailPulse Analytics API",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-# Global Exception Handler
-app.add_exception_handler(Exception, global_exception_handler)
 
-# CORS
+# ============================================================
+# Global Exception Handler
+# ============================================================
+
+app.add_exception_handler(
+    Exception,
+    global_exception_handler,
+)
+
+
+# ============================================================
+# CORS Configuration
+# ============================================================
+
 origins = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -67,7 +97,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ============================================================
 # Register Routes
+# ============================================================
+
 app.include_router(company_router)
 app.include_router(auth_router)
 app.include_router(employee_router)
@@ -88,12 +122,19 @@ app.include_router(customer_router)
 app.include_router(demand_forecast_router)
 
 
+# ============================================================
+# List All Routes
+# ============================================================
+
 @app.get("/routes")
 def list_routes():
+
     routes = []
 
     for route in app.routes:
+
         if isinstance(route, APIRoute):
+
             routes.append({
                 "path": route.path,
                 "methods": list(route.methods),
@@ -102,8 +143,13 @@ def list_routes():
     return routes
 
 
+# ============================================================
+# Home
+# ============================================================
+
 @app.get("/")
 def home():
+
     return {
         "message": "RetailPulse Analytics API is Running"
     }
