@@ -1,5 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import { createProduct } from "../../api/productApi";
+import { getCompanies } from "../../api/companyApi";
+import { getCategories } from "../../api/categoryApi";
+
 import "./CompanyModal.css";
 
 export default function ProductModal({
@@ -20,85 +24,202 @@ export default function ProductModal({
   };
 
   const [formData, setFormData] = useState(initialForm);
-  const [loading, setLoading] = useState(false);
 
-  if (!isOpen) return null;
+  const [companies, setCompanies] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+  const [loadingLists, setLoadingLists] = useState(false);
+
+  // ================= Load Companies & Categories =================
+
+  useEffect(() => {
+    if (isOpen) {
+      loadDropdownData();
+    }
+  }, [isOpen]);
+
+  const loadDropdownData = async () => {
+    try {
+      setLoadingLists(true);
+
+      const [companyData, categoryData] = await Promise.all([
+        getCompanies(),
+        getCategories(),
+      ]);
+
+      setCompanies(
+        Array.isArray(companyData) ? companyData : []
+      );
+
+      setCategories(
+        Array.isArray(categoryData) ? categoryData : []
+      );
+
+    } catch (error) {
+      console.error(
+        "Error loading companies/categories:",
+        error
+      );
+
+      alert("Failed to load company and category lists.");
+    } finally {
+      setLoadingLists(false);
+    }
+  };
+
+  // ================= Handle Input =================
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const {
+      name,
+      value,
+      type,
+      checked,
+    } = e.target;
 
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
     }));
   };
+
+  // ================= Reset Form =================
 
   const resetForm = () => {
     setFormData(initialForm);
   };
+
+  // ================= Close Modal =================
 
   const handleClose = () => {
     resetForm();
     onClose();
   };
 
+  // ================= Submit =================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.company_id) {
+      alert("Please select a company.");
+      return;
+    }
+
+    if (!formData.category_id) {
+      alert("Please select a category.");
+      return;
+    }
 
     setLoading(true);
 
     try {
       await createProduct({
         ...formData,
+
         company_id: Number(formData.company_id),
+
         category_id: Number(formData.category_id),
+
         unit_price: Number(formData.unit_price),
-        stock_quantity: Number(formData.stock_quantity),
+
+        stock_quantity: Number(
+          formData.stock_quantity
+        ),
       });
 
       alert("Product created successfully.");
 
       resetForm();
-      onSuccess();
+
+      await onSuccess();
+
       onClose();
 
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Error creating product:",
+        error
+      );
 
       alert(
         error.response?.data?.detail ||
-        "Failed to create product."
+          "Failed to create product."
       );
+
     } finally {
       setLoading(false);
     }
   };
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <div className="modal-overlay">
+
       <div className="modal">
 
         <h2>Add Product</h2>
 
         <form onSubmit={handleSubmit}>
 
-          <input
-            type="number"
+          {/* ================= Company ================= */}
+
+          <select
             name="company_id"
-            placeholder="Company ID"
             value={formData.company_id}
             onChange={handleChange}
             required
-          />
+            disabled={loading || loadingLists}
+          >
+            <option value="">
+              {loadingLists
+                ? "Loading companies..."
+                : "Select Company"}
+            </option>
 
-          <input
-            type="number"
+            {companies.map((company) => (
+              <option
+                key={company.id}
+                value={company.id}
+              >
+                {company.company_name}
+              </option>
+            ))}
+          </select>
+
+          {/* ================= Category ================= */}
+
+          <select
             name="category_id"
-            placeholder="Category ID"
             value={formData.category_id}
             onChange={handleChange}
             required
-          />
+            disabled={loading || loadingLists}
+          >
+            <option value="">
+              {loadingLists
+                ? "Loading categories..."
+                : "Select Category"}
+            </option>
+
+            {categories.map((category) => (
+              <option
+                key={category.id}
+                value={category.id}
+              >
+                {category.name}
+              </option>
+            ))}
+          </select>
+
+          {/* ================= Product Name ================= */}
 
           <input
             type="text"
@@ -107,7 +228,10 @@ export default function ProductModal({
             value={formData.name}
             onChange={handleChange}
             required
+            disabled={loading}
           />
+
+          {/* ================= Brand ================= */}
 
           <input
             type="text"
@@ -116,53 +240,84 @@ export default function ProductModal({
             value={formData.brand}
             onChange={handleChange}
             required
+            disabled={loading}
           />
+
+          {/* ================= Description ================= */}
 
           <textarea
             name="description"
             placeholder="Description"
             value={formData.description}
             onChange={handleChange}
+            disabled={loading}
           />
+
+          {/* ================= Unit Price ================= */}
 
           <input
             type="number"
             step="0.01"
+            min="0"
             name="unit_price"
             placeholder="Unit Price"
             value={formData.unit_price}
             onChange={handleChange}
             required
+            disabled={loading}
           />
+
+          {/* ================= Stock Quantity ================= */}
 
           <input
             type="number"
+            min="0"
             name="stock_quantity"
             placeholder="Stock Quantity"
             value={formData.stock_quantity}
             onChange={handleChange}
             required
+            disabled={loading}
           />
+
+          {/* ================= Status ================= */}
 
           <select
             name="status"
             value={formData.status}
             onChange={handleChange}
+            disabled={loading}
           >
-            <option value="In Stock">In Stock</option>
-            <option value="Low Stock">Low Stock</option>
-            <option value="Out of Stock">Out of Stock</option>
+            <option value="In Stock">
+              In Stock
+            </option>
+
+            <option value="Low Stock">
+              Low Stock
+            </option>
+
+            <option value="Out of Stock">
+              Out of Stock
+            </option>
           </select>
 
+          {/* ================= Active ================= */}
+
           <label className="checkbox-label">
+
             <input
               type="checkbox"
               name="is_active"
               checked={formData.is_active}
               onChange={handleChange}
+              disabled={loading}
             />
+
             Active
+
           </label>
+
+          {/* ================= Buttons ================= */}
 
           <div className="modal-buttons">
 
@@ -176,9 +331,11 @@ export default function ProductModal({
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || loadingLists}
             >
-              {loading ? "Saving..." : "Save Product"}
+              {loading
+                ? "Saving..."
+                : "Save Product"}
             </button>
 
           </div>
@@ -186,6 +343,7 @@ export default function ProductModal({
         </form>
 
       </div>
+
     </div>
   );
 }

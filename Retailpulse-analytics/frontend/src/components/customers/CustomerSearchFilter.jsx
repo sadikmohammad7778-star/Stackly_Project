@@ -7,7 +7,7 @@ export default function CustomerSearchFilter({
   const [search, setSearch] = useState("");
 
   const [filters, setFilters] = useState({
-    customer_type: "",
+    segment: "",
     status: "",
     city: "",
     state: "",
@@ -18,21 +18,26 @@ export default function CustomerSearchFilter({
     const value = e.target.value;
 
     setSearch(value);
+
     onSearch(value);
   };
 
   const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+
     const updatedFilters = {
       ...filters,
-      [e.target.name]: e.target.value,
+      [name]: value,
     };
 
     setFilters(updatedFilters);
+
     onFilter(updatedFilters);
   };
 
   return (
-    <>
+    <div className="customer-search-filter">
+
       <input
         type="text"
         placeholder="Search Customer..."
@@ -41,14 +46,15 @@ export default function CustomerSearchFilter({
       />
 
       <select
-        name="customer_type"
-        value={filters.customer_type}
+        name="segment"
+        value={filters.segment}
         onChange={handleFilterChange}
       >
-        <option value="">Customer Type</option>
-        <option value="Retail">Retail</option>
-        <option value="Wholesale">Wholesale</option>
-        <option value="Corporate">Corporate</option>
+        <option value="">All Segments</option>
+        <option value="New">New</option>
+        <option value="Regular">Regular</option>
+        <option value="Loyal">Loyal</option>
+        <option value="VIP">VIP</option>
       </select>
 
       <select
@@ -56,7 +62,7 @@ export default function CustomerSearchFilter({
         value={filters.status}
         onChange={handleFilterChange}
       >
-        <option value="">Status</option>
+        <option value="">All Status</option>
         <option value="Active">Active</option>
         <option value="Inactive">Inactive</option>
       </select>
@@ -84,6 +90,7 @@ export default function CustomerSearchFilter({
         value={filters.country}
         onChange={handleFilterChange}
       />
-    </>
+
+    </div>
   );
 }

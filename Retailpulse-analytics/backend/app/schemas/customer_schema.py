@@ -1,92 +1,84 @@
-from datetime import date, datetime
+from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
-# ----------------------------
-# Create Customer
-# ----------------------------
+# =========================================
+# Base Customer Schema
+# =========================================
 
-class CustomerCreate(BaseModel):
-    full_name: str
+class CustomerBase(BaseModel):
+    first_name: str
+    last_name: str
     email: EmailStr
     phone: str
-    gender: Optional[str] = None
-    date_of_birth: Optional[date] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    country: Optional[str] = None
-    customer_type: str
-    preferred_sales_channel: Optional[str] = None
+
+    address: str
+    city: str
+    state: str
+    country: str
+    postal_code: str
+
+    segment: str = "New"
+    status: str = "Active"
 
 
-# ----------------------------
+# =========================================
+# Create Customer
+# =========================================
+
+class CustomerCreate(CustomerBase):
+    pass
+
+
+# =========================================
 # Update Customer
-# ----------------------------
+# =========================================
 
 class CustomerUpdate(BaseModel):
-    full_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
-    gender: Optional[str] = None
-    date_of_birth: Optional[date] = None
+
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     country: Optional[str] = None
-    customer_type: Optional[str] = None
-    preferred_sales_channel: Optional[str] = None
+    postal_code: Optional[str] = None
+
+    segment: Optional[str] = None
     status: Optional[str] = None
 
 
-# ----------------------------
+# =========================================
 # Purchase Summary
-# ----------------------------
+# =========================================
 
-class CustomerPurchaseSummaryResponse(BaseModel):
-    total_orders: int
-    total_revenue: float
-    total_products_purchased: int
-    average_order_value: float
-    purchase_frequency: float
-    segment: str
+class PurchaseSummary(BaseModel):
+    total_orders: int = 0
+    total_revenue: float = 0
+    average_order_value: float = 0
+    total_products_purchased: int = 0
+    purchase_frequency: float = 0
 
-    first_purchase_date: Optional[date]
-    last_purchase_date: Optional[date]
-
-    favorite_product_id: Optional[int]
-    favorite_category_id: Optional[int]
-
-    model_config = ConfigDict(from_attributes=True)
+    first_purchase_date: Optional[datetime] = None
+    last_purchase_date: Optional[datetime] = None
 
 
-# ----------------------------
+# =========================================
 # Customer Response
-# ----------------------------
+# =========================================
 
-class CustomerResponse(BaseModel):
+class CustomerResponse(CustomerBase):
     id: int
     company_id: int
     customer_id: str
 
-    full_name: str
-    email: EmailStr
-    phone: str
-
-    gender: Optional[str]
-    date_of_birth: Optional[date]
-
-    address: Optional[str]
-    city: Optional[str]
-    state: Optional[str]
-    country: Optional[str]
-
-    customer_type: str
-    preferred_sales_channel: Optional[str]
-
-    status: str
+    total_orders: int = 0
+    total_spend: float = 0
+    last_purchase_date: Optional[datetime] = None
 
     created_at: datetime
     updated_at: datetime
@@ -94,11 +86,11 @@ class CustomerResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# ----------------------------
-# Customer Profile
-# ----------------------------
+# =========================================
+# Customer Profile Response
+# =========================================
 
 class CustomerProfileResponse(CustomerResponse):
-    purchase_summary: Optional[CustomerPurchaseSummaryResponse] = None
+    purchase_summary: PurchaseSummary = PurchaseSummary()
 
     model_config = ConfigDict(from_attributes=True)

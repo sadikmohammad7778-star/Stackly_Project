@@ -1,53 +1,241 @@
-export default function CustomerCards({ dashboard }) {
+import { useEffect, useState } from "react";
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+
+import {
+  customerGrowth,
+  revenueBySegment,
+  customerDistribution,
+  topCustomers,
+} from "../../api/customerApi";
+
+import "./CustomerCharts.css";
+
+const COLORS = [
+  "#2563eb",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+];
+
+export default function CustomerCharts() {
+
+  const [growthData, setGrowthData] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [distributionData, setDistributionData] = useState([]);
+  const [topCustomersData, setTopCustomersData] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadCharts();
+  }, []);
+
+  const loadCharts = async () => {
+
+    try {
+
+      const [
+        growthResponse,
+        revenueResponse,
+        distributionResponse,
+        topCustomersResponse,
+      ] = await Promise.all([
+        customerGrowth(),
+        revenueBySegment(),
+        customerDistribution(),
+        topCustomers(),
+      ]);
+
+      setGrowthData(growthResponse.data || []);
+      setRevenueData(revenueResponse.data || []);
+      setDistributionData(distributionResponse.data || []);
+      setTopCustomersData(topCustomersResponse.data || []);
+
+    } catch (error) {
+
+      console.error("Error loading charts:", error);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="chart-loading">
+        Loading Customer Analytics...
+      </div>
+    );
+  }
 
   return (
+    <div className="chart-grid">
 
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4,1fr)",
-        gap: "15px",
-        marginBottom: "30px",
-      }}
-    >
+      {/* Customer Growth */}
 
-      <div className="card">
-        <h4>Total Customers</h4>
-        <h2>{dashboard.total_customers || 0}</h2>
+      <div className="chart-card">
+
+        <h3>Customer Growth</h3>
+
+        <ResponsiveContainer width="100%" height={300}>
+
+          <LineChart data={growthData}>
+
+            <CartesianGrid strokeDasharray="3 3" />
+
+            <XAxis dataKey="month" />
+
+            <YAxis />
+
+            <Tooltip />
+
+            <Legend />
+
+            <Line
+              type="monotone"
+              dataKey="customers"
+              stroke="#2563eb"
+              strokeWidth={3}
+            />
+
+          </LineChart>
+
+        </ResponsiveContainer>
+
       </div>
 
-      <div className="card">
-        <h4>Active Customers</h4>
-        <h2>{dashboard.active_customers || 0}</h2>
+      {/* Revenue by Segment */}
+
+      <div className="chart-card">
+
+        <h3>Revenue by Customer Segment</h3>
+
+        <ResponsiveContainer width="100%" height={300}>
+
+          <PieChart>
+
+            <Pie
+              data={revenueData}
+              dataKey="sum"
+              nameKey="segment"
+              outerRadius={100}
+              label
+            >
+              {revenueData.map((entry, index) => (
+                <Cell
+                  key={index}
+                  fill={COLORS[index % COLORS.length]}
+                />
+              ))}
+            </Pie>
+
+            <Tooltip />
+
+            <Legend />
+
+          </PieChart>
+
+        </ResponsiveContainer>
+
       </div>
 
-      <div className="card">
-        <h4>New Customers</h4>
-        <h2>{dashboard.new_customers || 0}</h2>
+      {/* Customer Distribution */}
+
+      <div className="chart-card">
+
+        <h3>Customer Distribution</h3>
+
+        <ResponsiveContainer width="100%" height={300}>
+
+          <BarChart data={distributionData}>
+
+            <CartesianGrid strokeDasharray="3 3" />
+
+            <XAxis dataKey="city" />
+
+            <YAxis />
+
+            <Tooltip />
+
+            <Legend />
+
+            <Bar
+              dataKey="count"
+              fill="#10b981"
+              radius={[6, 6, 0, 0]}
+            />
+
+          </BarChart>
+
+        </ResponsiveContainer>
+
       </div>
 
-      <div className="card">
-        <h4>Returning Customers</h4>
-        <h2>{dashboard.returning_customers || 0}</h2>
-      </div>
+      {/* Top Customers */}
 
-      <div className="card">
-        <h4>Total Revenue</h4>
-        <h2>{dashboard.total_revenue_generated || 0}</h2>
-      </div>
+      <div className="chart-card">
 
-      <div className="card">
-        <h4>Average Spend</h4>
-        <h2>{dashboard.average_customer_spend || 0}</h2>
-      </div>
+        <h3>Top Customers</h3>
 
-      <div className="card">
-        <h4>Purchase Frequency</h4>
-        <h2>{dashboard.average_purchase_frequency || 0}</h2>
+        <table className="customer-table">
+
+          <thead>
+
+            <tr>
+              <th>Customer</th>
+              <th>Revenue</th>
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {topCustomersData.length > 0 ? (
+
+              topCustomersData.map((customer, index) => (
+
+                <tr key={index}>
+                  <td>{customer.name}</td>
+                  <td>₹ {customer.revenue}</td>
+                </tr>
+
+              ))
+
+            ) : (
+
+              <tr>
+                <td colSpan="2" style={{ textAlign: "center" }}>
+                  No Customer Data
+                </td>
+              </tr>
+
+            )}
+
+          </tbody>
+
+        </table>
+
       </div>
 
     </div>
-
   );
-
 }

@@ -79,18 +79,17 @@ def create_customer(
     new_customer = Customer(
         company_id=company_id,
         customer_id=customer_code,
-        full_name=customer.full_name,
+        first_name=customer.first_name,
+        last_name=customer.last_name,
         email=customer.email,
         phone=customer.phone,
-        gender=customer.gender,
-        date_of_birth=customer.date_of_birth,
         address=customer.address,
         city=customer.city,
         state=customer.state,
         country=customer.country,
-        customer_type=customer.customer_type,
-        preferred_sales_channel=customer.preferred_sales_channel,
-        status="Active",
+        postal_code=customer.postal_code,
+        segment=customer.segment,
+        status=customer.status,
     )
 
     db.add(new_customer)
@@ -123,12 +122,12 @@ def create_customer(
         user_id=user_id,
         module="Customers",
         action="CREATE",
-        description=f"Customer '{new_customer.full_name}' created.",
+        description=f"Customer '{new_customer.first_name} {new_customer.last_name}' created.",
     )
     create_notification(
         db=db,
         title="New Customer",
-        message=f"{new_customer.full_name} has been registered successfully.",
+        message=f"{new_customer.first_name} {new_customer.last_name} has been registered successfully.",
         type="success",
     )
 
@@ -141,7 +140,10 @@ def get_all_customers(
 ):
     return (
         db.query(Customer)
-        .filter(Customer.company_id == company_id)
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .order_by(Customer.created_at.desc())
         .all()
     )    
@@ -156,6 +158,7 @@ def get_customer_by_id(
         .filter(
             Customer.id == customer_id,
             Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
         )
         .first()
     )
@@ -163,8 +166,93 @@ def get_customer_by_id(
     if not customer:
         raise ValueError("Customer not found.")
 
-    return customer
+    # -----------------------------------
+    # Purchase Summary from Sales
+    # -----------------------------------
 
+    sales = (
+        db.query(Sale)
+        .filter(
+            Sale.customer_id == customer.id,
+            Sale.company_id == company_id,
+        )
+        .order_by(Sale.sale_date.asc())
+        .all()
+    )
+
+    total_orders = len(sales)
+
+    total_revenue = sum(
+        float(sale.total_amount or 0)
+        for sale in sales
+    )
+
+    average_order_value = (
+        total_revenue / total_orders
+        if total_orders > 0
+        else 0
+    )
+
+    first_purchase_date = (
+        sales[0].sale_date
+        if sales
+        else None
+    )
+
+    last_purchase_date = (
+        sales[-1].sale_date
+        if sales
+        else None
+    )
+
+    # -----------------------------------
+    # Purchase Frequency
+    # -----------------------------------
+
+    purchase_frequency = total_orders
+
+    # -----------------------------------
+    # Build response
+    # -----------------------------------
+
+    response = {
+        "id": customer.id,
+        "company_id": customer.company_id,
+        "customer_id": customer.customer_id,
+
+        "first_name": customer.first_name,
+        "last_name": customer.last_name,
+        "email": customer.email,
+        "phone": customer.phone,
+
+        "address": customer.address,
+        "city": customer.city,
+        "state": customer.state,
+        "country": customer.country,
+        "postal_code": customer.postal_code,
+
+        "segment": customer.segment,
+        "status": customer.status,
+
+        "total_orders": total_orders,
+        "total_spend": total_revenue,
+        "last_purchase_date": last_purchase_date,
+
+        "created_at": customer.created_at,
+        "updated_at": customer.updated_at,
+
+        "purchase_summary": {
+            "total_orders": total_orders,
+            "total_revenue": total_revenue,
+            "average_order_value": average_order_value,
+            "total_products_purchased": 0,
+            "purchase_frequency": purchase_frequency,
+            "first_purchase_date": first_purchase_date,
+            "last_purchase_date": last_purchase_date,
+        },
+    }
+
+    return response
 
 
 def update_customer(
@@ -180,6 +268,7 @@ def update_customer(
         company_id,
     )
 
+    # Check duplicate email
     if customer.email:
         email_exists = (
             db.query(Customer)
@@ -194,6 +283,7 @@ def update_customer(
         if email_exists:
             raise ValueError("Email already exists.")
 
+    # Check duplicate phone
     if customer.phone:
         phone_exists = (
             db.query(Customer)
@@ -208,6 +298,7 @@ def update_customer(
         if phone_exists:
             raise ValueError("Phone number already exists.")
 
+    # Update fields
     update_data = customer.model_dump(exclude_unset=True)
 
     for key, value in update_data.items():
@@ -216,13 +307,14 @@ def update_customer(
     db.commit()
     db.refresh(existing_customer)
 
+    # Audit Log
     create_audit_log(
         db=db,
         company_id=company_id,
         user_id=user_id,
         module="Customers",
         action="UPDATE",
-        description=f"Customer '{existing_customer.full_name}' updated.",
+        description=f"Customer '{existing_customer.first_name} {existing_customer.last_name}' updated.",
     )
 
     return existing_customer
@@ -241,9 +333,10 @@ def delete_customer(
         company_id,
     )
 
-    customer_name = customer.full_name
+    customer_name = f"{customer.first_name} {customer.last_name}"
 
-    db.delete(customer)
+    # Soft Delete
+    customer.deleted_at = datetime.utcnow()
 
     db.commit()
 
@@ -259,7 +352,6 @@ def delete_customer(
     return {
         "message": "Customer deleted successfully."
     }
-
 def change_customer_status(
     db: Session,
     customer_id: int,
@@ -280,13 +372,15 @@ def change_customer_status(
 
     db.refresh(customer)
 
+    customer_name = f"{customer.first_name} {customer.last_name}"
+
     create_audit_log(
         db=db,
         company_id=company_id,
         user_id=user_id,
         module="Customers",
         action="STATUS CHANGE",
-        description=f"Customer '{customer.full_name}' status changed to {status}.",
+        description=f"Customer '{customer_name}' status changed to {status}.",
     )
 
     if status == "Inactive":
@@ -294,7 +388,7 @@ def change_customer_status(
         create_notification(
             db=db,
             title="Customer Deactivated",
-            message=f"{customer.full_name} has been deactivated.",
+            message=f"{customer_name} has been deactivated.",
             type="warning",
         )
 
@@ -303,7 +397,7 @@ def change_customer_status(
         create_notification(
             db=db,
             title="Customer Activated",
-            message=f"{customer.full_name} has been activated.",
+            message=f"{customer_name} has been activated.",
             type="success",
         )
 
@@ -312,7 +406,7 @@ def change_customer_status(
 def filter_customers(
     db: Session,
     company_id: int,
-    customer_type: str = None,
+    segment: str = None,
     status: str = None,
     city: str = None,
     state: str = None,
@@ -320,12 +414,13 @@ def filter_customers(
 ):
 
     query = db.query(Customer).filter(
-        Customer.company_id == company_id
+        Customer.company_id == company_id,
+        Customer.deleted_at.is_(None),
     )
 
-    if customer_type:
+    if segment:
         query = query.filter(
-            Customer.customer_type == customer_type
+            Customer.segment == segment
         )
 
     if status:
@@ -352,7 +447,6 @@ def filter_customers(
         Customer.created_at.desc()
     ).all()
 
-
 def search_customers(
     db: Session,
     search: str,
@@ -362,22 +456,26 @@ def search_customers(
         db.query(Customer)
         .filter(
             Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
             or_(
-                Customer.full_name.ilike(f"%{search}%"),
-                Customer.customer_id.ilike(f"%{search}%"),
+                Customer.first_name.ilike(f"%{search}%"),
+                Customer.last_name.ilike(f"%{search}%"),
                 Customer.email.ilike(f"%{search}%"),
                 Customer.phone.ilike(f"%{search}%"),
-            ),
+                Customer.customer_id.ilike(f"%{search}%"),
+            )
         )
+        .order_by(Customer.created_at.desc())
         .all()
     )
-
-
 def get_customer_dashboard(db: Session, company_id: int):
 
     total_customers = (
         db.query(func.count(Customer.id))
-        .filter(Customer.company_id == company_id)
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .scalar()
     )
 
@@ -386,6 +484,7 @@ def get_customer_dashboard(db: Session, company_id: int):
         .filter(
             Customer.company_id == company_id,
             Customer.status == "Active",
+            Customer.deleted_at.is_(None),
         )
         .scalar()
     )
@@ -397,6 +496,7 @@ def get_customer_dashboard(db: Session, company_id: int):
         db.query(func.count(Customer.id))
         .filter(
             Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
             extract("month", Customer.created_at) == current_month,
             extract("year", Customer.created_at) == current_year,
         )
@@ -408,15 +508,20 @@ def get_customer_dashboard(db: Session, company_id: int):
         .join(Customer)
         .filter(
             Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
             CustomerPurchaseSummary.total_orders > 1,
         )
         .scalar()
     )
 
     total_revenue = (
-        db.query(func.coalesce(func.sum(CustomerPurchaseSummary.total_revenue), 0))
-        .join(Customer)
-        .filter(Customer.company_id == company_id)
+        db.query(
+            func.coalesce(func.sum(Customer.total_spend), 0)
+        )
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .scalar()
     )
 
@@ -429,7 +534,10 @@ def get_customer_dashboard(db: Session, company_id: int):
     average_purchase_frequency = (
         db.query(func.avg(CustomerPurchaseSummary.purchase_frequency))
         .join(Customer)
-        .filter(Customer.company_id == company_id)
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .scalar()
     ) or 0
 
@@ -439,7 +547,7 @@ def get_customer_dashboard(db: Session, company_id: int):
         "new_customers": new_customers,
         "returning_customers": returning_customers,
         "average_customer_spend": round(average_spend, 2),
-        "total_revenue_generated": total_revenue,
+        "total_revenue_generated": float(total_revenue or 0),
         "average_purchase_frequency": round(
             average_purchase_frequency,
             2,
@@ -447,82 +555,118 @@ def get_customer_dashboard(db: Session, company_id: int):
     }
 
 
-def get_top_customers(db: Session, company_id: int):
-
+def get_top_customers(
+    db: Session,
+    company_id: int,
+):
     customers = (
         db.query(
-            Customer.full_name,
-            CustomerPurchaseSummary.total_revenue,
+            Customer.first_name,
+            Customer.last_name,
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).label("revenue"),
         )
-        .join(CustomerPurchaseSummary)
-        .filter(Customer.company_id == company_id)
+        .join(
+            Sale,
+            Sale.customer_id == Customer.id,
+        )
+        .filter(
+            Customer.company_id == company_id,
+            Sale.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
+        .group_by(
+            Customer.id,
+            Customer.first_name,
+            Customer.last_name,
+        )
         .order_by(
-            CustomerPurchaseSummary.total_revenue.desc()
+            func.sum(Sale.total_amount).desc()
         )
         .limit(10)
         .all()
     )
 
     return [
-    {
-        "name": row.full_name,
-        "revenue": float(row.total_revenue or 0),
-    }
-    for row in customers
-]
+        {
+            "name": f"{row.first_name} {row.last_name}",
+            "revenue": float(row.revenue or 0),
+        }
+        for row in customers
+    ]
 
-
-def get_revenue_by_customer_type(
+def get_revenue_by_segment(
     db: Session,
     company_id: int,
 ):
-
     revenue = (
         db.query(
-            Customer.customer_type,
-            func.sum(
-                CustomerPurchaseSummary.total_revenue
-            ),
+            Customer.segment.label("segment"),
+            func.sum(Sale.total_amount).label("revenue"),
         )
-        .join(CustomerPurchaseSummary)
-        .filter(Customer.company_id == company_id)
-        .group_by(Customer.customer_type)
+        .join(
+            Sale,
+            Sale.customer_id == Customer.id,
+        )
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+            Sale.company_id == company_id,
+        )
+        .group_by(Customer.segment)
+        .order_by(
+            func.sum(Sale.total_amount).desc()
+        )
         .all()
     )
 
     return [
-    {
-        "customer_type": row.customer_type,
-        "sum": float(row[1] or 0),
-    }
-    for row in revenue
-]
-
+        {
+            "segment": row.segment or "Unknown",
+            "revenue": float(row.revenue or 0),
+        }
+        for row in revenue
+    ]
 def get_customer_growth(
     db: Session,
     company_id: int,
 ):
-
     growth = (
         db.query(
-            extract("month", Customer.created_at).label("month"),
+            func.date_trunc(
+                "month",
+                Customer.created_at
+            ).label("month"),
             func.count(Customer.id).label("customers"),
         )
-        .filter(Customer.company_id == company_id)
-        .group_by("month")
-        .order_by("month")
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
+        .group_by(
+            func.date_trunc(
+                "month",
+                Customer.created_at
+            )
+        )
+        .order_by(
+            func.date_trunc(
+                "month",
+                Customer.created_at
+            )
+        )
         .all()
     )
 
     return [
-    {
-        "month": int(row.month),
-        "customers": row.customers,
-    }
-    for row in growth
-]
-
-
+        {
+            "month": row.month.strftime("%b %Y"),
+            "customers": int(row.customers),
+        }
+        for row in growth
+    ]
 def get_customer_distribution(
     db: Session,
     company_id: int,
@@ -533,7 +677,10 @@ def get_customer_distribution(
             Customer.city.label("city"),
             func.count(Customer.id).label("count"),
         )
-        .filter(Customer.company_id == company_id)
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .group_by(Customer.city)
         .all()
     )
@@ -552,11 +699,13 @@ def get_customer_purchase_history(
     customer_id: int,
     company_id: int,
 ):
+    # Check customer exists
     customer = (
         db.query(Customer)
         .filter(
             Customer.id == customer_id,
             Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
         )
         .first()
     )
@@ -564,7 +713,32 @@ def get_customer_purchase_history(
     if not customer:
         raise ValueError("Customer not found.")
 
-    return []
+    # Get customer's sales
+    sales = (
+        db.query(Sale)
+        .filter(
+            Sale.customer_id == customer_id,
+            Sale.company_id == company_id,
+        )
+        .order_by(
+            Sale.sale_date.desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "id": sale.id,
+            "invoice_number": sale.invoice_number,
+            "created_at": sale.sale_date or sale.created_at,
+            "total_amount": float(
+                sale.total_amount or 0
+            ),
+            "payment_method": sale.payment_method,
+            "sales_channel": sale.sales_channel,
+        }
+        for sale in sales
+    ]
 
 def get_customer_timeline(
     db: Session,
@@ -597,12 +771,14 @@ def export_customers_csv(
 ):
     customers = (
         db.query(Customer)
-        .filter(Customer.company_id == company_id)
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .all()
     )
 
     folder = "exports"
-
     os.makedirs(folder, exist_ok=True)
 
     file_path = os.path.join(
@@ -621,13 +797,14 @@ def export_customers_csv(
 
         writer.writerow([
             "Customer ID",
-            "Full Name",
+            "First Name",
+            "Last Name",
             "Email",
             "Phone",
             "City",
             "State",
             "Country",
-            "Customer Type",
+            "Segment",
             "Status",
         ])
 
@@ -635,23 +812,29 @@ def export_customers_csv(
 
             writer.writerow([
                 customer.customer_id,
-                customer.full_name,
+                customer.first_name,
+                customer.last_name,
                 customer.email,
                 customer.phone,
                 customer.city,
                 customer.state,
                 customer.country,
-                customer.customer_type,
+                customer.segment,
                 customer.status,
             ])
 
     return file_path
 
-
-def export_customers_pdf(db: Session, company_id: int):
+def export_customers_pdf(
+    db: Session,
+    company_id: int,
+):
     customers = (
         db.query(Customer)
-        .filter(Customer.company_id == company_id)
+        .filter(
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
         .all()
     )
 
@@ -665,10 +848,10 @@ def export_customers_pdf(db: Session, company_id: int):
     data = [
         [
             "Customer ID",
-            "Name",
+            "Customer Name",
             "Email",
             "Phone",
-            "Customer Type",
+            "Segment",
             "Status",
         ]
     ]
@@ -676,10 +859,10 @@ def export_customers_pdf(db: Session, company_id: int):
     for customer in customers:
         data.append([
             customer.customer_id,
-            customer.full_name,
+            f"{customer.first_name} {customer.last_name}",
             customer.email,
             customer.phone,
-            customer.customer_type,
+            customer.segment,
             customer.status,
         ])
 
@@ -699,7 +882,6 @@ def export_customers_pdf(db: Session, company_id: int):
     document.build([table])
 
     return file_path
-
 
 def calculate_customer_segment(summary):
     if summary.total_orders == 0:

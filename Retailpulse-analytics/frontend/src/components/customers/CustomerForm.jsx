@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Country, State, City } from "country-state-city";
+
 import {
   createCustomer,
-  updateCustomer, 
+  updateCustomer,
 } from "../../api/customerApi";
 
 export default function CustomerForm({
@@ -12,47 +13,50 @@ export default function CustomerForm({
 }) {
 
   const emptyForm = {
-    full_name: "",
+    first_name: "",
+    last_name: "",
+
     email: "",
     phone: "",
-    gender: "",
-    date_of_birth: "",
+
     address: "",
-    city: "",
-    state: "",
+
     country: "",
-    customer_type: "Retail",
-    preferred_sales_channel: "Store",
+    state: "",
+    city: "",
+
+    postal_code: "",
+
+    segment: "New",
+
+    status: "Active",
   };
 
   const [formData, setFormData] = useState(emptyForm);
-
   // Country-State-City
   const countries = Country.getAllCountries();
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
 
   useEffect(() => {
-    if (selectedCustomer) {
-      setFormData({
-        full_name: selectedCustomer.full_name || "",
-        email: selectedCustomer.email || "",
-        phone: selectedCustomer.phone || "",
-        gender: selectedCustomer.gender || "",
-        date_of_birth: selectedCustomer.date_of_birth || "",
-        address: selectedCustomer.address || "",
-        city: selectedCustomer.city || "",
-        state: selectedCustomer.state || "",
-        country: selectedCustomer.country || "",
-        customer_type: selectedCustomer.customer_type || "Retail",
-        preferred_sales_channel:
-          selectedCustomer.preferred_sales_channel || "Store",
-      });
-    } else {
-      setFormData(emptyForm);
-    }
-  }, [selectedCustomer]);
-
+  if (selectedCustomer) {
+    setFormData({
+      first_name: selectedCustomer.first_name || "",
+      last_name: selectedCustomer.last_name || "",
+      email: selectedCustomer.email || "",
+      phone: selectedCustomer.phone || "",
+      address: selectedCustomer.address || "",
+      city: selectedCustomer.city || "",
+      state: selectedCustomer.state || "",
+      country: selectedCustomer.country || "",
+      postal_code: selectedCustomer.postal_code || "",
+      segment: selectedCustomer.segment || "New",
+      status: selectedCustomer.status || "Active",
+    });
+  } else {
+    setFormData(emptyForm);
+  }
+}, [selectedCustomer]);
   // Load States when Country changes
 
 useEffect(() => {
@@ -124,87 +128,78 @@ useEffect(() => {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
-    try {
-      if (selectedCustomer) {
-        await updateCustomer(selectedCustomer.id, formData);
-        alert("Customer updated successfully.");
-      } else {
-        await createCustomer(formData);
-        alert("Customer created successfully.");
-      }
-
-      // Reload customer list
-      await reload();
-
-      // Reset form
-      setFormData({ ...emptyForm });
-      setStates([]);
-      setCities([]);
-      setSelectedCustomer(null);
-
-    } catch (error) {
-      alert(
-        error.response?.data?.detail ||
-        "Something went wrong."
-      );
+  try {
+    if (selectedCustomer) {
+      await updateCustomer(selectedCustomer.id, formData);
+      alert("Customer updated successfully.");
+    } else {
+      await createCustomer(formData);
+      alert("Customer created successfully.");
     }
-  };
-  return (
-    <form className="customer-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        name="full_name"
-        placeholder="Full Name"
-        value={formData.full_name}
-        onChange={handleChange}
-        required
-      />
 
-      <input
-        type="email"
-        name="email"
-        placeholder="Email"
-        value={formData.email}
-        onChange={handleChange}
-        required
-      />
+    await reload();
 
-      <input
-        type="text"
-        name="phone"
-        placeholder="Phone Number"
-        value={formData.phone}
-        onChange={handleChange}
-        required
-      />
+    setFormData(emptyForm);
+    setStates([]);
+    setCities([]);
+    setSelectedCustomer(null);
 
-      <select
-        name="gender"
-        value={formData.gender}
-        onChange={handleChange}
-      >
-        <option value="">Select Gender</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
-        <option value="Other">Other</option>
-      </select>
+  } catch (error) {
+    alert(
+      error.response?.data?.detail ||
+      "Something went wrong."
+    );
+  }
+};
 
-      <input
-        type="date"
-        name="date_of_birth"
-        value={formData.date_of_birth}
-        onChange={handleChange}
-      />
+return (
+  <form className="customer-form" onSubmit={handleSubmit}>
 
-      <input
-        type="text"
-        name="address"
-        placeholder="Address"
-        value={formData.address}
-        onChange={handleChange}
-      />
+    <input
+      type="text"
+      name="first_name"
+      placeholder="First Name"
+      value={formData.first_name}
+      onChange={handleChange}
+      required
+    />
 
-            {/* Country */}
+    <input
+      type="text"
+      name="last_name"
+      placeholder="Last Name"
+      value={formData.last_name}
+      onChange={handleChange}
+      required
+    />
+
+    <input
+      type="email"
+      name="email"
+      placeholder="Email"
+      value={formData.email}
+      onChange={handleChange}
+      required
+    />
+
+    <input
+      type="text"
+      name="phone"
+      placeholder="Phone Number"
+      value={formData.phone}
+      onChange={handleChange}
+      required
+    />
+
+    <input
+      type="text"
+      name="address"
+      placeholder="Address"
+      value={formData.address}
+      onChange={handleChange}
+      required
+    />
+      {/* Country */}
 
       <select
         name="country"
@@ -225,7 +220,6 @@ useEffect(() => {
       </select>
 
       {/* State */}
-
       <select
         name="state"
         value={formData.state}
@@ -246,7 +240,6 @@ useEffect(() => {
       </select>
 
       {/* City */}
-
       <select
         name="city"
         value={formData.city}
@@ -264,25 +257,34 @@ useEffect(() => {
             {city.name}
           </option>
         ))}
+      </select>      
+            <input
+              type="text"
+              name="postal_code"
+              placeholder="Postal Code"
+              value={formData.postal_code}
+              onChange={handleChange}
+              required
+            />
+
+      <select
+        name="segment"
+        value={formData.segment}
+        onChange={handleChange}
+      >
+        <option value="New">New</option>
+        <option value="Regular">Regular</option>
+        <option value="Loyal">Loyal</option>
+        <option value="VIP">VIP</option>
       </select>
 
       <select
-        name="customer_type"
-        value={formData.customer_type}
+        name="status"
+        value={formData.status}
         onChange={handleChange}
       >
-        <option value="Retail">Retail</option>
-        <option value="Wholesale">Wholesale</option>
-        <option value="Corporate">Corporate</option>
-      </select>
-
-      <select
-        name="preferred_sales_channel"
-        value={formData.preferred_sales_channel}
-        onChange={handleChange}
-      >
-        <option value="Store">Store</option>
-        <option value="Online">Online</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
       </select>
 
       <button type="submit">
@@ -291,17 +293,17 @@ useEffect(() => {
 
       {selectedCustomer && (
         <button
-         onClick={() => {
-          setFormData({ ...emptyForm });
-          setStates([]);
-          setCities([]);
-          setSelectedCustomer(null);
-        }}
+          type="button"
+          onClick={() => {
+            setFormData(emptyForm);
+            setStates([]);
+            setCities([]);
+            setSelectedCustomer(null);
+          }}
         >
           Cancel
         </button>
       )}
-
     </form>
   );
 }

@@ -5,29 +5,45 @@ export default function CustomerTimeline({ customerId }) {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadTimeline = async () => {
-    try {
-      const response = await customerTimeline(customerId);
-      setTimeline(response.data);
-    } catch (error) {
-      console.error("Error loading timeline:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     if (customerId) {
       loadTimeline();
     }
   }, [customerId]);
 
+  const loadTimeline = async () => {
+    try {
+      setLoading(true);
+
+      const data = await customerTimeline(customerId);
+
+      console.log("Customer Timeline:", data);
+
+      setTimeline(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error(
+        "Error loading timeline:",
+        error
+      );
+
+      setTimeline([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
-    return <p>Loading timeline...</p>;
+    return (
+      <div>
+        <h3>Customer Timeline</h3>
+        <p>Loading timeline...</p>
+      </div>
+    );
   }
 
   return (
     <div className="customer-timeline">
+
       <h3>Customer Timeline</h3>
 
       {timeline.length === 0 ? (
@@ -36,23 +52,34 @@ export default function CustomerTimeline({ customerId }) {
         <ul>
           {timeline.map((item) => (
             <li key={item.id}>
-              <strong>{item.event}</strong>
+
+              <strong>
+                {item.event || "-"}
+              </strong>
 
               <br />
 
-              <span>{item.description}</span>
+              <span>
+                {item.description || "-"}
+              </span>
 
               <br />
 
               <small>
-                {new Date(item.created_at).toLocaleString()}
+                {item.created_at
+                  ? new Date(
+                      item.created_at
+                    ).toLocaleString("en-IN")
+                  : "-"}
               </small>
 
               <hr />
+
             </li>
           ))}
         </ul>
       )}
+
     </div>
   );
 }

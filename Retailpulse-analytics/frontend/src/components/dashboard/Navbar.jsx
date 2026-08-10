@@ -7,10 +7,14 @@ import {
   FiSettings,
 } from "react-icons/fi";
 
+import { useNavigate } from "react-router-dom";
+
 import NotificationDropdown from "./NotificationDropdown";
 import { getUnreadCount } from "../../api/notificationApi";
 
 export default function Navbar() {
+  const navigate = useNavigate();
+
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
@@ -18,7 +22,93 @@ export default function Navbar() {
     year: "numeric",
   });
 
-  const [showNotifications, setShowNotifications] = useState(false);
+  // ================= Search =================
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const pages = [
+    {
+      name: "Dashboard",
+      path: "/dashboard",
+    },
+    {
+      name: "Companies",
+      path: "/companies",
+    },
+    {
+      name: "Categories",
+      path: "/categories",
+    },
+    {
+      name: "Products",
+      path: "/products",
+    },
+    {
+      name: "Sales",
+      path: "/sales",
+    },
+    {
+      name: "Inventory",
+      path: "/inventory",
+    },
+    {
+      name: "Demand Forecast",
+      path: "/forecast",
+    },
+    {
+      name: "Customers",
+      path: "/customers",
+    },
+    {
+      name: "Customer Analytics",
+      path: "/customers/dashboard",
+    },
+    {
+      name: "Employees",
+      path: "/employees",
+    },
+    {
+      name: "Departments",
+      path: "/departments",
+    },
+    {
+      name: "Attendance",
+      path: "/attendance",
+    },
+    {
+      name: "Reports",
+      path: "/reports",
+    },
+    {
+      name: "Analytics",
+      path: "/analytics",
+    },
+    {
+      name: "Audit Logs",
+      path: "/audit",
+    },
+    {
+      name: "Settings",
+      path: "/settings",
+    },
+  ];
+
+  const filteredPages = pages.filter((page) =>
+    page.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase().trim())
+  );
+
+  const handlePageClick = (path) => {
+    navigate(path);
+    setSearchTerm("");
+  };
+
+  // ================= Notifications =================
+
+  const [showNotifications, setShowNotifications] =
+    useState(false);
+
   const [unreadCount, setUnreadCount] = useState(0);
 
   const notificationRef = useRef(null);
@@ -26,9 +116,13 @@ export default function Navbar() {
   const loadUnreadCount = async () => {
     try {
       const data = await getUnreadCount();
+
       setUnreadCount(data.count);
     } catch (error) {
-      console.error("Failed to load unread count:", error);
+      console.error(
+        "Failed to load unread count:",
+        error
+      );
     }
   };
 
@@ -42,17 +136,24 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, []);
 
+  // Close notification dropdown when clicking outside
+
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (
         notificationRef.current &&
-        !notificationRef.current.contains(event.target)
+        !notificationRef.current.contains(
+          event.target
+        )
       ) {
         setShowNotifications(false);
       }
     };
 
-    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
 
     return () => {
       document.removeEventListener(
@@ -64,27 +165,74 @@ export default function Navbar() {
 
   const toggleNotifications = () => {
     setShowNotifications((prev) => !prev);
+
     loadUnreadCount();
   };
 
   return (
     <header className="navbar">
+
+      {/* ================= Left Section ================= */}
+
       <div className="navbar-left">
-        <h2>RetailPulse Analytics</h2>
-        <p>{today}</p>
+        <div>
+          <h2>RetailPulse Analytics</h2>
+
+          <span>{today}</span>
+        </div>
       </div>
+
+      {/* ================= Search ================= */}
 
       <div className="navbar-center">
         <div className="search">
           <FiSearch />
+
           <input
             type="text"
             placeholder="Search..."
+            value={searchTerm}
+            onChange={(e) =>
+              setSearchTerm(e.target.value)
+            }
           />
         </div>
+
+        {/* Search Results */}
+
+        {searchTerm.trim() && (
+          <div className="search-results">
+
+            {filteredPages.length > 0 ? (
+              filteredPages.map((page) => (
+                <div
+                  key={page.path}
+                  className="search-result-item"
+                  onClick={() =>
+                    handlePageClick(page.path)
+                  }
+                >
+                  <FiSearch />
+
+                  <span>{page.name}</span>
+                </div>
+              ))
+            ) : (
+              <div className="search-no-result">
+                No page found
+              </div>
+            )}
+
+          </div>
+        )}
       </div>
 
+      {/* ================= Right Section ================= */}
+
       <div className="navbar-right">
+
+        {/* Notifications */}
+
         <div
           className="notification-wrapper"
           ref={notificationRef}
@@ -109,9 +257,16 @@ export default function Navbar() {
           )}
         </div>
 
-        <button className="icon-btn">
+        {/* Settings */}
+
+        <button
+          className="icon-btn"
+          onClick={() => navigate("/settings")}
+        >
           <FiSettings />
         </button>
+
+        {/* Profile */}
 
         <div className="profile">
           <img
@@ -121,9 +276,11 @@ export default function Navbar() {
 
           <div>
             <h4>Mohammad Sadik</h4>
+
             <span>Company Admin</span>
           </div>
         </div>
+
       </div>
     </header>
   );

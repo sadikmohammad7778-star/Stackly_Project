@@ -2,7 +2,7 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    Date,
+    Float,
     DateTime,
     ForeignKey,
 )
@@ -15,68 +15,165 @@ from app.config.database import Base
 class Customer(Base):
     __tablename__ = "customers"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     company_id = Column(
         Integer,
         ForeignKey("companies.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
 
-    customer_id = Column(String(20), unique=True, nullable=False)
+    customer_id = Column(
+        String(20),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
 
-    full_name = Column(String(150), nullable=False)
+    # ------------------------------------
+    # Customer Information
+    # ------------------------------------
 
-    email = Column(String(150), nullable=False)
+    first_name = Column(
+        String(100),
+        nullable=False,
+    )
 
-    phone = Column(String(20), nullable=False)
+    last_name = Column(
+        String(100),
+        nullable=False,
+    )
 
-    gender = Column(String(20))
+    email = Column(
+        String(150),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
 
-    date_of_birth = Column(Date)
+    phone = Column(
+        String(20),
+        unique=True,
+        nullable=False,
+    )
 
-    address = Column(String(255))
+    # ------------------------------------
+    # Address
+    # ------------------------------------
 
-    city = Column(String(100))
+    address = Column(
+        String(255),
+        nullable=False,
+    )
 
-    state = Column(String(100))
+    city = Column(
+        String(100),
+        nullable=False,
+    )
 
-    country = Column(String(100))
+    state = Column(
+        String(100),
+        nullable=False,
+    )
 
-    customer_type = Column(String(50), nullable=False)
+    country = Column(
+        String(100),
+        nullable=False,
+    )
 
-    preferred_sales_channel = Column(String(50))
+    postal_code = Column(
+        String(20),
+        nullable=False,
+    )
 
-    status = Column(String(20), default="Active")
+    # ------------------------------------
+    # Customer Details
+    # ------------------------------------
+
+    segment = Column(
+        String(20),
+        default="New",
+        nullable=False,
+    )
+
+    status = Column(
+        String(20),
+        default="Active",
+        nullable=False,
+    )
+
+    # ------------------------------------
+    # Purchase Information
+    # ------------------------------------
+
+    total_orders = Column(
+        Integer,
+        default=0,
+        nullable=False,
+    )
+
+    total_spend = Column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
+
+    last_purchase_date = Column(
+        DateTime,
+        nullable=True,
+    )
+
+    # ------------------------------------
+    # Audit Fields
+    # ------------------------------------
 
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
+        nullable=False,
     )
 
     updated_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
+        nullable=False,
     )
 
+    deleted_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    # ------------------------------------
     # Relationships
+    # ------------------------------------
 
     company = relationship(
         "Company",
         back_populates="customers",
     )
 
+    sales = relationship(
+        "Sale",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+    )
+
     purchase_summary = relationship(
         "CustomerPurchaseSummary",
         back_populates="customer",
         uselist=False,
-        cascade="all, delete",
+        cascade="all, delete-orphan",
     )
-
 
     timeline = relationship(
         "CustomerTimeline",
         back_populates="customer",
-        cascade="all, delete",
+        cascade="all, delete-orphan",
     )

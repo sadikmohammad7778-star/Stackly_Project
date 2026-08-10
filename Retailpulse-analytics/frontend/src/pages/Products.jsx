@@ -19,10 +19,16 @@ import {
 
 export default function Products() {
   const [products, setProducts] = useState([]);
+
   const [openModal, setOpenModal] = useState(false);
+
   const [editOpen, setEditOpen] = useState(false);
+
   const [selectedProduct, setSelectedProduct] = useState(null);
+
   const [search, setSearch] = useState("");
+
+  // ================= Load Products =================
 
   useEffect(() => {
     loadProducts();
@@ -31,59 +37,117 @@ export default function Products() {
   const loadProducts = async () => {
     try {
       const data = await getProducts();
-      setProducts(data);
+
+      setProducts(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Error loading products:",
+        error
+      );
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
+  // ================= Search Products =================
+
+  const handleSearch = async (e) => {
+    const value = e.target.value;
+
+    setSearch(value);
+
+    if (value.trim() === "") {
+      await loadProducts();
+      return;
+    }
 
     try {
-      await deleteProduct(id);
-      loadProducts();
+      const data = await searchProducts(
+        value.trim()
+      );
+
+      setProducts(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Error searching products:",
+        error
+      );
     }
+  };
+
+  // ================= Delete Product =================
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this product?"
+    );
+
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      const response = await deleteProduct(id);
+
+      alert(
+        response?.message ||
+          "Product deleted successfully."
+      );
+
+      await loadProducts();
+
+    } catch (error) {
+      console.error(
+        "Error deleting product:",
+        error
+      );
+
+      alert(
+        error.response?.data?.detail ||
+          "Failed to delete product."
+      );
+    }
+  };
+
+  // ================= Edit Product =================
+
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setEditOpen(true);
   };
 
   return (
     <div className="companies-page">
 
+      {/* ================= Header ================= */}
+
       <div className="companies-header">
         <h2>Products</h2>
 
-        <button onClick={() => setOpenModal(true)}>
+        <button
+          onClick={() => setOpenModal(true)}
+        >
           <FiPlus />
           Add Product
         </button>
       </div>
 
+      {/* ================= Search ================= */}
+
       <div className="search-box">
         <FiSearch />
 
         <input
-            type="text"
-            placeholder="Search Product..."
-            value={search}
-            onChange={async (e) => {
-                const value = e.target.value;
-                setSearch(value);
-
-                if (value.trim() === "") {
-                loadProducts();
-                } else {
-                try {
-                    const data = await searchProducts(value);
-                    setProducts(data);
-                } catch (err) {
-                    console.error(err);
-                }
-                }
-            }}
+          type="text"
+          placeholder="Search Product..."
+          value={search}
+          onChange={handleSearch}
         />
       </div>
+
+      {/* ================= Product Table ================= */}
 
       <div className="table-card">
 
@@ -103,43 +167,91 @@ export default function Products() {
           <tbody>
 
             {products.length > 0 ? (
+
               products.map((product) => (
+
                 <tr key={product.id}>
-                  <td>{product.name}</td>
-                  <td>{product.sku}</td>
-                  <td>₹{product.unit_price}</td>
-                  <td>{product.stock_quantity}</td>
+
                   <td>
-                    <span className={`status ${product.status.toLowerCase().replace(/\s/g, "-")}`}>
-                        {product.status}
-                    </span>
+                    {product.name}
                   </td>
+
                   <td>
-                   <button
-                        className="edit"
-                        onClick={() => {
-                            setSelectedProduct(product);
-                            setEditOpen(true);
-                        }}
-                        >
-                        <FiEdit />
+                    {product.sku}
+                  </td>
+
+                  <td>
+                    ₹{product.unit_price}
+                  </td>
+
+                  <td>
+                    {product.stock_quantity}
+                  </td>
+
+                  <td>
+
+                    <span
+                      className={`status ${
+                        product.status
+                          ?.toLowerCase()
+                          .replace(/\s/g, "-")
+                      }`}
+                    >
+                      {product.status}
+                    </span>
+
+                  </td>
+
+                  <td>
+
+                    {/* Edit */}
+
+                    <button
+                      className="edit"
+                      onClick={() =>
+                        handleEdit(product)
+                      }
+                    >
+                      <FiEdit />
                     </button>
+
+                    {/* Delete */}
 
                     <button
                       className="delete"
-                      onClick={() => handleDelete(product.id)}
+                      onClick={() =>
+                        handleDelete(
+                          product.id
+                        )
+                      }
                     >
                       <FiTrash2 />
                     </button>
+
                   </td>
+
                 </tr>
+
               ))
+
             ) : (
+
               <tr>
-                <td colSpan="6" style={{ textAlign: "center" }}>
-                  No Products Found
+
+                <td
+                  colSpan="6"
+                  style={{
+                    textAlign: "center",
+                    padding: "20px",
+                  }}
+                >
+                  {search.trim()
+                    ? "No matching products found."
+                    : "No Products Found"}
                 </td>
+
               </tr>
+
             )}
 
           </tbody>
@@ -148,15 +260,24 @@ export default function Products() {
 
       </div>
 
+      {/* ================= Add Product Modal ================= */}
+
       <ProductModal
         isOpen={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() =>
+          setOpenModal(false)
+        }
         onSuccess={loadProducts}
       />
 
+      {/* ================= Edit Product Modal ================= */}
+
       <EditProductModal
         isOpen={editOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={() => {
+          setEditOpen(false);
+          setSelectedProduct(null);
+        }}
         onSuccess={loadProducts}
         product={selectedProduct}
       />

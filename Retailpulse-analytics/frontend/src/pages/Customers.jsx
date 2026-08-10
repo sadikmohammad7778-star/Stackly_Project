@@ -15,7 +15,10 @@ import CustomerExport from "../components/customers/CustomerExport";
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] =
+    useState(null);
+
+  // ================= Load Customers =================
 
   useEffect(() => {
     loadCustomers();
@@ -23,43 +26,86 @@ export default function Customers() {
 
   const loadCustomers = async () => {
     try {
-      const response = await getCustomers();
-      setCustomers(response.data);
+      const data = await getCustomers();
+
+      setCustomers(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Error loading customers:",
+        error
+      );
+
+      setCustomers([]);
     }
   };
+
+  // ================= Refresh =================
+
+  const refreshData = async () => {
+    await loadCustomers();
+  };
+
+  // ================= Search =================
 
   const handleSearch = async (search) => {
     try {
-      if (search.trim() === "") {
-        loadCustomers();
+      if (!search.trim()) {
+        await loadCustomers();
         return;
       }
 
-      const response = await searchCustomers(search);
-      setCustomers(response.data);
+      const data = await searchCustomers(
+        search.trim()
+      );
+
+      setCustomers(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Error searching customers:",
+        error
+      );
+
+      setCustomers([]);
     }
   };
 
+  // ================= Filter =================
+
   const handleFilter = async (filters) => {
     try {
-      const response = await filterCustomers(filters);
-      setCustomers(response.data);
+      const data = await filterCustomers(
+        filters
+      );
+
+      setCustomers(
+        Array.isArray(data) ? data : []
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        "Error filtering customers:",
+        error
+      );
+
+      setCustomers([]);
     }
   };
 
   return (
     <div className="companies-page">
 
+      {/* Header */}
+
       <div className="companies-header">
         <h2>Customers</h2>
+
         <CustomerExport />
       </div>
+
+      {/* Search & Filter */}
 
       <div className="customer-search">
         <CustomerSearchFilter
@@ -68,19 +114,27 @@ export default function Customers() {
         />
       </div>
 
+      {/* Customer Form */}
+
       <div className="table-card">
         <CustomerForm
-          reload={loadCustomers}
+          reload={refreshData}
           selectedCustomer={selectedCustomer}
-          setSelectedCustomer={setSelectedCustomer}
+          setSelectedCustomer={
+            setSelectedCustomer
+          }
         />
       </div>
+
+      {/* Customer Table */}
 
       <div className="table-card">
         <CustomerTable
           customers={customers}
-          reload={loadCustomers}
-          setSelectedCustomer={setSelectedCustomer}
+          reload={refreshData}
+          setSelectedCustomer={
+            setSelectedCustomer
+          }
         />
       </div>
 

@@ -4,93 +4,172 @@ const API = axios.create({
   baseURL: "http://127.0.0.1:8000",
 });
 
+// =====================================
 // Attach JWT Token
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+// =====================================
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  return config;
-});
-
-// =========================
+// =====================================
 // Customer CRUD
-// =========================
+// =====================================
 
-export const getCustomers = () =>
-  API.get("/customers/");
+export const getCustomers = async () => {
+  const response = await API.get("/customers/");
+  return response.data;
+};
 
-export const getCustomer = (id) =>
-  API.get(`/customers/${id}`);
+export const getCustomer = async (id) => {
+  const response = await API.get(`/customers/${id}`);
+  return response.data;
+};
 
-export const createCustomer = (data) =>
-  API.post("/customers/", data);
+export const createCustomer = async (data) => {
+  const response = await API.post("/customers/", data);
+  return response.data;
+};
 
-export const updateCustomer = (id, data) =>
-  API.put(`/customers/${id}`, data);
+export const updateCustomer = async (id, data) => {
+  const response = await API.put(`/customers/${id}`, data);
+  return response.data;
+};
 
-export const deleteCustomer = (id) =>
-  API.delete(`/customers/${id}`);
+export const deleteCustomer = async (id) => {
+  const response = await API.delete(`/customers/${id}`);
+  return response.data;
+};
 
-// =========================
+export const changeCustomerStatus = async (id, status) => {
+  const response = await API.patch(
+    `/customers/${id}/status`,
+    null,
+    {
+      params: { status },
+    }
+  );
+
+  return response.data;
+};
+
+// =====================================
 // Search & Filter
-// =========================
+// =====================================
 
-export const searchCustomers = (search) =>
-  API.get("/customers/search/", {
+export const searchCustomers = async (search) => {
+  const response = await API.get("/customers/search/", {
     params: { search },
   });
 
-export const filterCustomers = (filters) =>
-  API.get("/customers/filter/", {
+  return response.data;
+};
+
+export const filterCustomers = async (filters) => {
+  const response = await API.get("/customers/filter/", {
     params: filters,
   });
 
-// =========================
+  return response.data;
+};
+
+// =====================================
 // Dashboard
-// =========================
+// =====================================
 
-export const customerDashboard = () =>
-  API.get("/customers/dashboard");
+export const customerDashboard = async () => {
+  const response = await API.get("/customers/dashboard");
 
-// =========================
-// Charts
-// =========================
+  return response.data;
+};
 
-export const customerGrowth = () =>
-  API.get("/customers/growth");
+// =====================================
+// Analytics & Charts
+// =====================================
 
-export const topCustomers = () =>
-  API.get("/customers/top-customers");
+export const customerGrowth = async () => {
+  const response = await API.get("/customers/growth");
 
-export const revenueByType = () =>
-  API.get("/customers/revenue-by-type");
+  return response.data;
+};
 
-export const customerDistribution = () =>
-  API.get("/customers/distribution");
+export const topCustomers = async () => {
+  const response = await API.get("/customers/top-customers");
 
-// =========================
+  return response.data;
+};
+
+export const revenueBySegment = async () => {
+  const response = await API.get(
+    "/customers/revenue-by-segment"
+  );
+
+  return response.data;
+};
+
+export const customerDistribution = async () => {
+  const response = await API.get(
+    "/customers/distribution"
+  );
+
+  return response.data;
+};
+
+// =====================================
 // Customer Details
-// =========================
+// =====================================
 
-export const customerPurchaseHistory = (id) =>
-  API.get(`/customers/${id}/purchase-history`);
+export const customerPurchaseHistory = async (id) => {
+  const response = await API.get(
+    `/customers/${id}/purchase-history`
+  );
 
-export const customerTimeline = (id) =>
-  API.get(`/customers/${id}/timeline`);
+  return response.data;
+};
 
-// =========================
+export const customerTimeline = async (id) => {
+  const response = await API.get(
+    `/customers/${id}/timeline`
+  );
+
+  return response.data;
+};
+
+// =====================================
 // Export
-// =========================
+// =====================================
 
-export const exportCustomersCSV = () =>
-  API.get("/customers/export/csv", {
-    responseType: "blob",
-  });
+export const exportCustomersCSV = async () => {
+  const response = await API.get(
+    "/customers/export/csv",
+    {
+      responseType: "blob",
+    }
+  );
 
-export const exportCustomersPDF = () =>
-  API.get("/customers/export/pdf", {
-    responseType: "blob",
-  });
+  return response;
+};
+
+export const exportCustomersPDF = async () => {
+  const response = await API.get(
+    "/customers/export/pdf",
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response;
+};
+
+export default API;

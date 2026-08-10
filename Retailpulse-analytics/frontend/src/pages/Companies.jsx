@@ -17,155 +17,180 @@ import {
 import "./Companies.css";
 
 export default function Companies() {
-
   const [companies, setCompanies] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [openModal, setOpenModal] = useState(false);
-
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const [selectedCompany, setSelectedCompany] = useState(null);
 
+  // Load companies when page opens
   useEffect(() => {
     loadCompanies();
   }, []);
 
+  // Get companies from backend
   const loadCompanies = async () => {
     try {
       const data = await getCompanies();
       setCompanies(data);
     } catch (error) {
-      console.error(error);
+      console.error("Error loading companies:", error);
     }
   };
 
+  // Delete company
   const handleDelete = async (id) => {
-
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this company?"
     );
 
-    if (!confirmDelete) return;
-
-    try {
-
-      await deleteCompany(id);
-
-      loadCompanies();
-
-    } catch (error) {
-
-      console.error(error);
-
+    if (!confirmDelete) {
+      return;
     }
 
+    try {
+      const response = await deleteCompany(id);
+
+      alert(
+        response.message || "Company deleted successfully."
+      );
+
+      await loadCompanies();
+    } catch (error) {
+      console.error("Error deleting company:", error);
+
+      alert(
+        error.response?.data?.detail ||
+          "Failed to delete company."
+      );
+    }
   };
 
-  return (
+  // Filter companies based on search
+  const filteredCompanies = companies.filter((company) => {
+    const search = searchTerm.toLowerCase().trim();
 
+    return (
+      company.company_name
+        ?.toLowerCase()
+        .includes(search)
+    );
+  });
+
+  return (
     <div className="companies-page">
 
+      {/* Header */}
       <div className="companies-header">
-
         <h2>Companies</h2>
 
         <button onClick={() => setOpenModal(true)}>
-
           <FiPlus />
-
           Add Company
-
         </button>
-
       </div>
 
+      {/* Search */}
       <div className="search-box">
-
         <FiSearch />
 
         <input
           type="text"
           placeholder="Search company..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-
       </div>
 
+      {/* Company Table */}
       <div className="table-card">
-
         <table>
 
           <thead>
-
             <tr>
-
               <th>Name</th>
               <th>Email</th>
               <th>Phone</th>
               <th>Address</th>
               <th>Actions</th>
-
             </tr>
-
           </thead>
 
           <tbody>
+            {filteredCompanies.length > 0 ? (
+              filteredCompanies.map((company) => (
+                <tr key={company.id}>
 
-            {companies.map((company) => (
+                  <td>
+                    {company.company_name}
+                  </td>
 
-              <tr key={company.id}>
+                  <td>
+                    {company.email}
+                  </td>
 
-                <td>{company.company_name}</td>
+                  <td>
+                    {company.phone}
+                  </td>
 
-                <td>{company.email}</td>
+                  <td>
+                    {company.address}
+                  </td>
 
-                <td>{company.phone}</td>
+                  <td>
 
-                <td>{company.address}</td>
+                    {/* Edit */}
+                    <button
+                      className="edit"
+                      onClick={() => {
+                        setSelectedCompany(company);
+                        setEditModalOpen(true);
+                      }}
+                    >
+                      <FiEdit />
+                    </button>
 
-                <td>
+                    {/* Delete */}
+                    <button
+                      className="delete"
+                      onClick={() =>
+                        handleDelete(company.id)
+                      }
+                    >
+                      <FiTrash2 />
+                    </button>
 
-                  <button
-                    className="edit"
-                    onClick={() => {
-
-                      setSelectedCompany(company);
-
-                      setEditModalOpen(true);
-
-                    }}
-                  >
-
-                    <FiEdit />
-
-                  </button>
-
-                  <button
-                    className="delete"
-                    onClick={() => handleDelete(company.id)}
-                  >
-
-                    <FiTrash2 />
-
-                  </button>
-
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="5"
+                  style={{
+                    textAlign: "center",
+                    padding: "20px",
+                  }}
+                >
+                  No companies found.
                 </td>
-
               </tr>
-
-            ))}
-
+            )}
           </tbody>
 
         </table>
-
       </div>
 
+      {/* Add Company Modal */}
       <CompanyModal
         isOpen={openModal}
         onClose={() => setOpenModal(false)}
         onSuccess={loadCompanies}
       />
 
+      {/* Edit Company Modal */}
       <EmployeeCompanyModal
         isOpen={editModalOpen}
         company={selectedCompany}
@@ -174,7 +199,5 @@ export default function Companies() {
       />
 
     </div>
-
   );
-
 }

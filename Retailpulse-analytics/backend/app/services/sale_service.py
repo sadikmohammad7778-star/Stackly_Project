@@ -11,6 +11,7 @@ from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 from app.models.product import Product
 from app.models.category import Category
+from app.models.customer import Customer
 
 from app.schemas.sale_schema import (
     SaleCreate,
@@ -48,10 +49,23 @@ def create_sale(
 
     invoice_number = generate_invoice_number(db)
 
+    customer = (
+        db.query(Customer)
+        .filter(Customer.id == sale.customer_id)
+        .first()
+    )
+
+    if customer is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Customer not found"
+        )
+
     db_sale = Sale(
         company_id=sale.company_id,
         invoice_number=invoice_number,
-        customer_name=sale.customer_name,
+        customer_id=customer.id,
+        customer_name=f"{customer.first_name} {customer.last_name}",
         sales_channel=sale.sales_channel,
         payment_method=sale.payment_method,
         total_amount=0,
@@ -63,13 +77,13 @@ def create_sale(
     db.refresh(db_sale)
 
     create_audit_log(
-    db=db,
-    company_id=db_sale.company_id,
-    user_id=user_id,
-    module="Sales",
-    action="CREATE",
-    description=f"Created Sale #{db_sale.id}",
-)
+        db=db,
+        company_id=db_sale.company_id,
+        user_id=user_id,
+        module="Sales",
+        action="CREATE",
+        description=f"Created Sale #{db_sale.id}",
+    )
 
     grand_total = 0
 
@@ -152,9 +166,13 @@ def create_sale(
 
     db_sale.total_amount = grand_total
 
+    # Update Customer Statistics
+    customer.total_orders += 1
+    customer.total_spend += grand_total
+    customer.last_purchase_date = datetime.utcnow()
+
     db.commit()
     db.refresh(db_sale)
-
 
     create_notification(
         db=db,
@@ -164,7 +182,6 @@ def create_sale(
     )
 
     return db_sale
-
 
 
 # --------------------------------------------------
@@ -225,21 +242,18 @@ def update_sale(
 
     create_audit_log(
         db=db,
-        user_id=user_id,
-        action="UPDATE",
-        module="Sales",
-    )
-    create_audit_log(
-        db=db,
-        company_id=sale.company_id,
+        company_id=db_sale.company_id,
         user_id=user_id,
         module="Sales",
         action="UPDATE",
-        description=f"Updated Sale #{sale.id}",
+        description=f"Updated Sale #{db_sale.id}",
     )
 
     return db_sale
+
+# --------------------------------------------------
 # Delete Sale
+# --------------------------------------------------
 
 def delete_sale(
     db: Session,

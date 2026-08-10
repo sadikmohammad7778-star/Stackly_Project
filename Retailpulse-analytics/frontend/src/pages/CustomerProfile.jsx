@@ -5,7 +5,6 @@ import { getCustomer } from "../api/customerApi";
 import CustomerPurchaseHistory from "../components/customers/CustomerPurchaseHistory";
 import CustomerTimeline from "../components/customers/CustomerTimeline";
 
-
 export default function CustomerProfile() {
   const { id } = useParams();
 
@@ -14,10 +13,14 @@ export default function CustomerProfile() {
 
   const loadCustomer = async () => {
     try {
-      const response = await getCustomer(id);
-      setCustomer(response.data);
+      const data = await getCustomer(id);
+
+      console.log("Customer Profile:", data);
+
+      setCustomer(data);
     } catch (error) {
       console.error("Error loading customer:", error);
+      setCustomer(null);
     } finally {
       setLoading(false);
     }
@@ -28,11 +31,11 @@ export default function CustomerProfile() {
   }, [id]);
 
   if (loading) {
-    return <h2>Loading...</h2>;
+    return <div>Loading customer...</div>;
   }
 
   if (!customer) {
-    return <h2>Customer not found.</h2>;
+    return <div>Customer not found.</div>;
   }
 
   return (
@@ -47,11 +50,17 @@ export default function CustomerProfile() {
       <h3>Personal Information</h3>
 
       <p>
-        <strong>Name:</strong> {customer.full_name}
+        <strong>Name:</strong>{" "}
+        {customer.full_name ||
+          `${customer.first_name || ""} ${
+            customer.last_name || ""
+          }`.trim() ||
+          "-"}
       </p>
 
       <p>
-        <strong>Gender:</strong> {customer.gender || "-"}
+        <strong>Gender:</strong>{" "}
+        {customer.gender || "-"}
       </p>
 
       <p>
@@ -66,11 +75,13 @@ export default function CustomerProfile() {
       <h3>Contact Information</h3>
 
       <p>
-        <strong>Email:</strong> {customer.email}
+        <strong>Email:</strong>{" "}
+        {customer.email || "-"}
       </p>
 
       <p>
-        <strong>Phone:</strong> {customer.phone}
+        <strong>Phone:</strong>{" "}
+        {customer.phone || "-"}
       </p>
 
       <hr />
@@ -80,19 +91,23 @@ export default function CustomerProfile() {
       <h3>Address</h3>
 
       <p>
-        <strong>Address:</strong> {customer.address || "-"}
+        <strong>Address:</strong>{" "}
+        {customer.address || "-"}
       </p>
 
       <p>
-        <strong>City:</strong> {customer.city || "-"}
+        <strong>City:</strong>{" "}
+        {customer.city || "-"}
       </p>
 
       <p>
-        <strong>State:</strong> {customer.state || "-"}
+        <strong>State:</strong>{" "}
+        {customer.state || "-"}
       </p>
 
       <p>
-        <strong>Country:</strong> {customer.country || "-"}
+        <strong>Country:</strong>{" "}
+        {customer.country || "-"}
       </p>
 
       <hr />
@@ -103,11 +118,12 @@ export default function CustomerProfile() {
 
       <p>
         <strong>Customer Type:</strong>{" "}
-        {customer.customer_type}
+        {customer.customer_type || "-"}
       </p>
 
       <p>
-        <strong>Status:</strong> {customer.status}
+        <strong>Status:</strong>{" "}
+        {customer.status || "-"}
       </p>
 
       <p>
@@ -128,12 +144,16 @@ export default function CustomerProfile() {
 
       <p>
         <strong>Total Revenue:</strong> ₹{" "}
-        {customer.purchase_summary?.total_revenue ?? 0}
+        {Number(
+          customer.purchase_summary?.total_revenue || 0
+        ).toLocaleString("en-IN")}
       </p>
 
       <p>
         <strong>Average Order Value:</strong> ₹{" "}
-        {customer.purchase_summary?.average_order_value ?? 0}
+        {Number(
+          customer.purchase_summary?.average_order_value || 0
+        ).toLocaleString("en-IN")}
       </p>
 
       <p>
@@ -160,11 +180,17 @@ export default function CustomerProfile() {
 
       {/* Purchase History */}
 
-      <CustomerPurchaseHistory customerId={customer.id} />
+      <CustomerPurchaseHistory
+        customerId={customer.id}
+      />
 
       <hr />
 
-      <CustomerTimeline customerId={customer.id} />
+      {/* Customer Timeline */}
+
+      <CustomerTimeline
+        customerId={customer.id}
+      />
 
     </div>
   );

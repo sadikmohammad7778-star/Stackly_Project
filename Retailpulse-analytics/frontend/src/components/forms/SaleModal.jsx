@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { getCategories } from "../../api/categoryApi";
 import { createSale } from "../../api/salesApi";
 import { getCompanies } from "../../api/companyApi";
 import { getProducts } from "../../api/productApi";
-import { getCategories } from "../../api/categoryApi";
+import { getCustomers } from "../../api/customerApi";
 import "./CompanyModal.css";
 
 export default function SaleModal({
@@ -12,27 +13,27 @@ export default function SaleModal({
 }) {
 
   const [companies, setCompanies] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
 
   const [formData, setFormData] = useState({
-    company_id: "",
-    customer_name: "",
-    sales_channel: "Offline",
-    payment_method: "Cash",
+  company_id: "",
+  customer_id: "",
+  sales_channel: "Offline",
+  payment_method: "Cash",
 
-    items: [
-      {
-        product_id: "",
-        category_id: "",
-        quantity: "",
-        unit_price: "",
-        discount: 0,
-        tax: 0,
-      },
-    ],
-  });
-
+  items: [
+    {
+      product_id: "",
+      category_id: "",
+      quantity: "",
+      unit_price: "",
+      discount: 0,
+      tax: 0,
+    },
+  ],
+});
   // ==========================
   // Load dropdown data
   // ==========================
@@ -40,23 +41,28 @@ export default function SaleModal({
   useEffect(() => {
     loadDropdowns();
   }, []);
+useEffect(() => {
+  loadDropdowns();
+}, []);
 
-  const loadDropdowns = async () => {
-    try {
-      const companyData = await getCompanies();
-      const productData = await getProducts();
-      const categoryData = await getCategories();
+const loadDropdowns = async () => {
+  try {
+    const companyData = await getCompanies();
+    const customerData = await getCustomers();
+    const productData = await getProducts();
+    const categoryData = await getCategories();
 
-      setCompanies(companyData);
-      setProducts(productData);
-      setCategories(categoryData);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    setCompanies(companyData);
+    setCustomers(customerData);
+    setProducts(productData);
+    setCategories(categoryData);
 
-  if (!isOpen) return null;
+  } catch (error) {
+    console.error(error);
+  }
+};
 
+if (!isOpen) return null;
   // ==========================
   // Main Form Change
   // ==========================
@@ -119,7 +125,7 @@ export default function SaleModal({
     try {
       await createSale({
         company_id: Number(formData.company_id),
-        customer_name: formData.customer_name,
+        customer_id: Number(formData.customer_id),
         sales_channel: formData.sales_channel,
         payment_method: formData.payment_method,
 
@@ -177,14 +183,23 @@ export default function SaleModal({
 
         {/* Customer */}
 
-        <input
-          type="text"
-          name="customer_name"
-          placeholder="Customer Name"
-          value={formData.customer_name}
-          onChange={handleChange}
-          required
-        />
+        <select
+            name="customer_id"
+            value={formData.customer_id}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Customer</option>
+
+            {customers.map((customer) => (
+              <option
+                key={customer.id}
+                value={customer.id}
+              >
+                {customer.first_name} {customer.last_name}
+              </option>
+            ))}
+          </select>
 
         {/* Sales Channel */}
 

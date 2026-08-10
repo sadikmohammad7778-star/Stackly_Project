@@ -23,7 +23,7 @@ from app.services.customer_service import (
     filter_customers,
     get_customer_dashboard,
     get_top_customers,
-    get_revenue_by_customer_type,
+    get_revenue_by_segment,
     get_customer_growth,
     get_customer_distribution,
     get_customer_purchase_history,
@@ -49,15 +49,16 @@ def add_customer(
 ):
     try:
         return create_customer(
-            db,
-            customer,
-            current_user.company_id,
-            current_user.id,
+            db=db,
+            customer=customer,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+        )
 # =====================================================
 # LIST
 # =====================================================
@@ -68,10 +69,9 @@ def get_customers(
     current_user: User = Depends(get_current_user),
 ):
     return get_all_customers(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
-
 
 # =====================================================
 # SEARCH & FILTER (STATIC ROUTES FIRST)
@@ -83,18 +83,18 @@ def search_customer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    print("SEARCH API HIT")
+
     
     return search_customers(
-        db,
-        search,
-        current_user.company_id,
+        db=db,
+        search=search,
+        company_id=current_user.company_id,
     )
 
 
 @router.get("/filter/")
 def filter_customer_data(
-    customer_type: str = None,
+    segment: str = None,
     status: str = None,
     city: str = None,
     state: str = None,
@@ -103,15 +103,14 @@ def filter_customer_data(
     current_user: User = Depends(get_current_user),
 ):
     return filter_customers(
-        db,
-        current_user.company_id,
-        customer_type,
-        status,
-        city,
-        state,
-        country,
+        db=db,
+        company_id=current_user.company_id,
+        segment=segment,
+        status=status,
+        city=city,
+        state=state,
+        country=country,
     )
-
 
 # =====================================================
 # DASHBOARD & ANALYTICS
@@ -123,8 +122,8 @@ def customer_dashboard(
     current_user: User = Depends(get_current_user),
 ):
     return get_customer_dashboard(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
 
 
@@ -134,19 +133,19 @@ def top_customers(
     current_user: User = Depends(get_current_user),
 ):
     return get_top_customers(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
 
 
-@router.get("/revenue-by-type")
-def revenue_by_type(
+@router.get("/revenue-by-segment")
+def revenue_by_segment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_revenue_by_customer_type(
-        db,
-        current_user.company_id,
+    return get_revenue_by_segment(
+        db=db,
+        company_id=current_user.company_id,
     )
 
 
@@ -156,10 +155,9 @@ def growth(
     current_user: User = Depends(get_current_user),
 ):
     return get_customer_growth(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
-
 
 @router.get("/distribution")
 def distribution(
@@ -167,8 +165,8 @@ def distribution(
     current_user: User = Depends(get_current_user),
 ):
     return get_customer_distribution(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
 
 
@@ -182,8 +180,8 @@ def export_customer_csv(
     current_user: User = Depends(get_current_user),
 ):
     file_path = export_customers_csv(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
 
     return FileResponse(
@@ -199,8 +197,8 @@ def export_customer_pdf(
     current_user: User = Depends(get_current_user),
 ):
     file_path = export_customers_pdf(
-        db,
-        current_user.company_id,
+        db=db,
+        company_id=current_user.company_id,
     )
 
     return FileResponse(
@@ -225,14 +223,18 @@ def get_customer(
 ):
     try:
         return get_customer_by_id(
-            db,
-            customer_id,
-            current_user.company_id,
+            db=db,
+            customer_id=customer_id,
+            company_id=current_user.company_id,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.put(
+    "/{customer_id}",
+    response_model=CustomerResponse,
+)
 @router.put(
     "/{customer_id}",
     response_model=CustomerResponse,
@@ -245,15 +247,18 @@ def edit_customer(
 ):
     try:
         return update_customer(
-            db,
-            customer_id,
-            customer,
-            current_user.company_id,
-            current_user.id,
+            db=db,
+            customer_id=customer_id,
+            customer=customer,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
         )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
+    except ValueError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+        )
 
 @router.delete("/{customer_id}")
 def remove_customer(
@@ -263,10 +268,10 @@ def remove_customer(
 ):
     try:
         return delete_customer(
-            db,
-            customer_id,
-            current_user.company_id,
-            current_user.id,
+            db=db,
+            customer_id=customer_id,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -282,17 +287,26 @@ def update_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
+    if status not in ["Active", "Inactive"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Status must be Active or Inactive.",
+        )
+
     try:
         return change_customer_status(
-            db,
-            customer_id,
-            status,
-            current_user.company_id,
-            current_user.id,
+            db=db,
+            customer_id=customer_id,
+            status=status,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
 
 @router.get("/{customer_id}/purchase-history")
 def customer_purchase_history(
@@ -301,9 +315,9 @@ def customer_purchase_history(
     current_user: User = Depends(get_current_user),
 ):
     return get_customer_purchase_history(
-        db,
-        customer_id,
-        current_user.company_id,
+       db=db,
+       customer_id=customer_id,
+       company_id=current_user.company_id,
     )
 
 
@@ -314,7 +328,7 @@ def customer_timeline(
     current_user: User = Depends(get_current_user),
 ):
     return get_customer_timeline(
-        db,
-        customer_id,
-        current_user.company_id,
+        db=db,
+        customer_id=customer_id,
+        company_id=current_user.company_id,
     )

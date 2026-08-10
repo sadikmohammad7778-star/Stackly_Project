@@ -11,13 +11,13 @@ class AuditLog(Base):
 
     company_id = Column(
         Integer,
-        ForeignKey("companies.id"),
-        nullable=False,
+        ForeignKey("companies.id", ondelete= "SET NULL"),
+        nullable=True,
     )
 
     user_id = Column(
         Integer,
-        ForeignKey("users.id"),
+        ForeignKey("users.id", ondelete="SET NULL"),
         nullable=False,
     )
 
