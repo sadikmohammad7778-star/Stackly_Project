@@ -48,49 +48,80 @@ export default function Analytics() {
   }, [filter]);
 
   const loadAnalytics = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  try {
+    setLoading(true);
+    setError("");
 
-      const [
-        dashboard,
-        revenue,
-        products,
-        categories,
-        payments,
-        channels,
-        inventoryCategoryData,
-        stock,
-        inventoryValueData,
-      ] = await Promise.all([
-       getDashboardKPIs(companyId, filter),
-       getRevenueTrend(companyId, filter),
-       getTopProducts(companyId, filter),
-       getTopCategories(companyId, filter),
-       getPaymentMethods(companyId, filter),
-       getSalesChannels(companyId, filter),
-       getInventoryCategory(companyId, filter),
-       getStockStatus(companyId, filter),
-       getInventoryValue(companyId, filter),
-      ]);
+    const [
+      dashboard,
+      revenue,
+      products,
+      categories,
+      payments,
+      channels,
+      inventoryCategoryData,
+      stock,
+      inventoryValueData,
+    ] = await Promise.all([
+      getDashboardKPIs(companyId),
 
-      setKpis(dashboard);
-      setRevenueTrend(revenue);
-      setTopProducts(products);
-      setTopCategories(categories);
-      setPaymentMethods(payments);
-      setSalesChannels(channels);
-      setInventoryCategory(inventoryCategoryData);
-      setStockStatus(stock);
-      setInventoryValue(inventoryValueData);
-    } catch (err) {
-      console.error(err);
-      setError("Unable to load analytics.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      getRevenueTrend(
+        companyId,
+        "daily",
+        filter
+      ),
 
+      getTopProducts(
+        companyId,
+        "revenue",
+        filter
+      ),
+
+      getTopCategories(
+        companyId,
+        filter
+      ),
+
+      getPaymentMethods(
+        companyId,
+        filter
+      ),
+
+      getSalesChannels(
+        companyId,
+        filter
+      ),
+
+      getInventoryCategory(
+        companyId
+      ),
+
+      getStockStatus(
+        companyId
+      ),
+
+      getInventoryValue(
+        companyId
+      ),
+    ]);
+
+    setKpis(dashboard);
+    setRevenueTrend(revenue);
+    setTopProducts(products);
+    setTopCategories(categories);
+    setPaymentMethods(payments);
+    setSalesChannels(channels);
+    setInventoryCategory(inventoryCategoryData);
+    setStockStatus(stock);
+    setInventoryValue(inventoryValueData);
+
+  } catch (err) {
+    console.error("Analytics loading error:", err);
+    setError("Unable to load analytics.");
+  } finally {
+    setLoading(false);
+  }
+};
   const exportCSV = () => {
     const rows = [];
 
@@ -148,14 +179,17 @@ export default function Analytics() {
     rows.push(["Inventory"]);
     rows.push(["Category", "Available Stock"]);
     inventoryCategory.forEach((item) =>
-      rows.push([item.category_name, item.available_stock])
+      rows.push([item.category_name, item.stock])
     );
 
     rows.push([]);
     rows.push(["Stock Status"]);
     rows.push(["Status", "Count"]);
     stockStatus.forEach((item) =>
-      rows.push([item.stock_status, item.count])
+      rows.push([
+        item.stock_status,
+        item.total_products,
+      ])
     );
 
     rows.push([]);

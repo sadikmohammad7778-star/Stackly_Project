@@ -22,7 +22,56 @@ from app.schemas.analytics_schema import (
     RevenueReport,
     InventoryReport,
 )
+from app.schemas.analytics_schema import SalesSummaryResponse
 
+def apply_date_filter(
+    query,
+    date_from=None,
+    date_to=None,
+):
+    if date_from:
+        query = query.filter(
+            Sale.sale_date >= date_from
+        )
+
+    if date_to:
+        query = query.filter(
+            Sale.sale_date < date_to
+        )
+
+    return query
+
+def get_date_range(date_range: str):
+    today = datetime.utcnow().date()
+
+    if date_range == "today":
+        return today, today + timedelta(days=1)
+
+    if date_range == "last_7_days":
+        return today - timedelta(days=6), today + timedelta(days=1)
+
+    if date_range == "last_30_days":
+        return today - timedelta(days=29), today + timedelta(days=1)
+
+    if date_range == "this_month":
+        start = today.replace(day=1)
+        return start, today + timedelta(days=1)
+
+    if date_range == "last_month":
+        this_month = today.replace(day=1)
+        last_month_end = this_month
+        last_month_start = (
+            this_month - timedelta(days=1)
+        ).replace(day=1)
+
+        return last_month_start, last_month_end
+
+    if date_range == "all":
+        return None, None
+
+    raise ValueError(
+        "Invalid date range"
+    )
 
 def get_overview(db: Session):
     total_companies = db.query(Company).count()
@@ -235,46 +284,138 @@ def get_dashboard_kpis(db: Session, company_id: int):
     )
 
 
-def get_revenue_trend(db: Session, company_id: int):
+def get_revenue_trend(
+    db: Session,
+    company_id: int,
+    period: str = "daily",
+    date_from=None,
+    date_to=None,
+):
     """
-    Daily revenue trend.
+    Revenue trend by daily, weekly, or monthly period.
     """
 
-    data = (
-        db.query(
-            cast(Sale.sale_date, Date).label("date"),
-            func.coalesce(func.sum(Sale.total_amount), 0).label("revenue"),
+    if period not in ["daily", "weekly", "monthly"]:
+        raise ValueError(
+            "Period must be daily, weekly, or monthly"
         )
-        .filter(Sale.company_id == company_id)
-        .group_by(cast(Sale.sale_date, Date))
-        .order_by(cast(Sale.sale_date, Date))
+
+    if period == "daily":
+        date_group = cast(
+            Sale.sale_date,
+            Date
+        )
+
+    elif period == "weekly":
+        date_group = func.date_trunc(
+            "week",
+            Sale.sale_date
+        )
+
+    else:
+        date_group = func.date_trunc(
+            "month",
+            Sale.sale_date
+        )
+
+    query = (
+        db.query(
+            date_group.label("date"),
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).label("revenue"),
+        )
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(date_group)
+        .order_by(date_group)
         .all()
     )
 
     return [
         {
-            "date": str(row.date),
+            "date": str(row.date.date())
+            if hasattr(row.date, "date")
+            else str(row.date),
             "revenue": float(row.revenue),
         }
         for row in data
     ]
-
-
-def get_top_products(db: Session, company_id: int):
+def get_top_products(
+    db: Session,
+    company_id: int,
+    sort_by: str = "revenue",
+    date_from=None,
+    date_to=None,
+):
     """
-    Top 10 Best Selling Products
+    Top performing products by revenue or quantity sold.
     """
 
-    data = (
+    if sort_by not in ["revenue", "quantity"]:
+        raise ValueError(
+            "sort_by must be revenue or quantity"
+        )
+
+    revenue = func.coalesce(
+        func.sum(SaleItem.total),
+        0
+    )
+
+    quantity = func.coalesce(
+        func.sum(SaleItem.quantity),
+        0
+    )
+
+    if sort_by == "revenue":
+        order_column = revenue.desc()
+    else:
+        order_column = quantity.desc()
+
+    query = (
         db.query(
             Product.name.label("product_name"),
-            func.sum(SaleItem.quantity).label("quantity_sold"),
+            quantity.label("quantity_sold"),
+            revenue.label("revenue"),
         )
-        .join(SaleItem, SaleItem.product_id == Product.id)
-        .join(Sale, Sale.id == SaleItem.sale_id)
-        .filter(Sale.company_id == company_id)
-        .group_by(Product.id, Product.name)
-        .order_by(func.sum(SaleItem.quantity).desc())
+        .join(
+            SaleItem,
+            SaleItem.product_id == Product.id
+        )
+        .join(
+            Sale,
+            Sale.id == SaleItem.sale_id
+        )
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(
+            Product.id,
+            Product.name
+        )
+        .order_by(order_column)
         .limit(10)
         .all()
     )
@@ -283,27 +424,64 @@ def get_top_products(db: Session, company_id: int):
         {
             "product_name": row.product_name,
             "quantity_sold": int(row.quantity_sold),
+            "revenue": float(row.revenue),
         }
         for row in data
     ]
 
-
-def get_top_categories(db: Session, company_id: int):
+def get_top_categories(
+    db: Session,
+    company_id: int,
+    date_from=None,
+    date_to=None,
+):
     """
     Top Performing Categories by Revenue
     """
 
-    data = (
+    query = (
         db.query(
             Category.name.label("category_name"),
-            func.coalesce(func.sum(SaleItem.total), 0).label("revenue"),
+            func.coalesce(
+                func.sum(SaleItem.total),
+                0
+            ).label("revenue"),
         )
-        .join(Product, Product.category_id == Category.id)
-        .join(SaleItem, SaleItem.product_id == Product.id)
-        .join(Sale, Sale.id == SaleItem.sale_id)
-        .filter(Sale.company_id == company_id)
-        .group_by(Category.id, Category.name)
-        .order_by(func.coalesce(func.sum(SaleItem.total), 0).desc())
+        .join(
+            Product,
+            Product.category_id == Category.id
+        )
+        .join(
+            SaleItem,
+            SaleItem.product_id == Product.id
+        )
+        .join(
+            Sale,
+            Sale.id == SaleItem.sale_id
+        )
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(
+            Category.id,
+            Category.name
+        )
+        .order_by(
+            func.coalesce(
+                func.sum(SaleItem.total),
+                0
+            ).desc()
+        )
         .all()
     )
 
@@ -315,44 +493,95 @@ def get_top_categories(db: Session, company_id: int):
         for row in data
     ]
 
-def get_payment_method_analysis(db: Session, company_id: int):
+def get_payment_method_analysis(
+    db: Session,
+    company_id: int,
+    date_from=None,
+    date_to=None,
+):
     """
-    Sales by Payment Method
+    Sales distribution by payment method.
     """
 
-    data = (
+    query = (
         db.query(
             Sale.payment_method,
-            func.coalesce(func.sum(Sale.total_amount), 0).label("total_sales"),
+            func.count(Sale.id).label("transaction_count"),
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).label("total_sales"),
         )
-        .filter(Sale.company_id == company_id)
-        .group_by(Sale.payment_method)
-        .order_by(func.coalesce(func.sum(Sale.total_amount), 0).desc())
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(
+            Sale.payment_method
+        )
+        .order_by(
+            func.sum(Sale.total_amount).desc()
+        )
         .all()
     )
 
     return [
         {
             "payment_method": row.payment_method,
+            "transaction_count": int(row.transaction_count),
             "total_sales": float(row.total_sales),
         }
         for row in data
     ]
-
-
-def get_sales_channel_analysis(db: Session, company_id: int):
+def get_sales_channel_analysis(
+    db: Session,
+    company_id: int,
+    date_from=None,
+    date_to=None,
+):
     """
     Sales by Sales Channel
     """
 
-    data = (
+    query = (
         db.query(
             Sale.sales_channel,
-            func.coalesce(func.sum(Sale.total_amount), 0).label("total_sales"),
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).label("total_sales"),
         )
-        .filter(Sale.company_id == company_id)
-        .group_by(Sale.sales_channel)
-        .order_by(func.coalesce(func.sum(Sale.total_amount), 0).desc())
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(
+            Sale.sales_channel
+        )
+        .order_by(
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).desc()
+        )
         .all()
     )
 
@@ -364,8 +593,10 @@ def get_sales_channel_analysis(db: Session, company_id: int):
         for row in data
     ]
 
-
-def get_inventory_by_category(db: Session, company_id: int):
+def get_inventory_by_category(
+    db: Session,
+    company_id: int,
+):
     """
     Inventory Distribution by Category
     """
@@ -373,13 +604,29 @@ def get_inventory_by_category(db: Session, company_id: int):
     data = (
         db.query(
             Category.name.label("category_name"),
-            func.coalesce(func.sum(Inventory.available_stock), 0).label("stock"),
+            func.coalesce(
+                func.sum(Inventory.available_stock),
+                0
+            ).label("stock"),
         )
-        .join(Product, Product.category_id == Category.id)
-        .join(Inventory, Inventory.product_id == Product.id)
-        .filter(Inventory.company_id == company_id)
-        .group_by(Category.id, Category.name)
-        .order_by(Category.name)
+        .join(
+            Product,
+            Product.category_id == Category.id
+        )
+        .join(
+            Inventory,
+            Inventory.product_id == Product.id
+        )
+        .filter(
+            Inventory.company_id == company_id
+        )
+        .group_by(
+            Category.id,
+            Category.name
+        )
+        .order_by(
+            Category.name
+        )
         .all()
     )
 
@@ -390,8 +637,10 @@ def get_inventory_by_category(db: Session, company_id: int):
         }
         for row in data
     ]
-
-def get_stock_status_summary(db: Session, company_id: int):
+def get_stock_status_summary(
+    db: Session,
+    company_id: int,
+):
     """
     Stock Status Summary
     """
@@ -401,9 +650,15 @@ def get_stock_status_summary(db: Session, company_id: int):
             Inventory.stock_status,
             func.count(Inventory.id).label("total_products"),
         )
-        .filter(Inventory.company_id == company_id)
-        .group_by(Inventory.stock_status)
-        .order_by(Inventory.stock_status)
+        .filter(
+            Inventory.company_id == company_id
+        )
+        .group_by(
+            Inventory.stock_status
+        )
+        .order_by(
+            Inventory.stock_status
+        )
         .all()
     )
 
@@ -415,7 +670,10 @@ def get_stock_status_summary(db: Session, company_id: int):
         for row in data
     ]
 
-def get_inventory_value_by_category(db: Session, company_id: int):
+def get_inventory_value_by_category(
+    db: Session,
+    company_id: int,
+):
     """
     Inventory Value by Category
     """
@@ -430,16 +688,27 @@ def get_inventory_value_by_category(db: Session, company_id: int):
                 0,
             ).label("inventory_value"),
         )
-        .join(Product, Product.category_id == Category.id)
-        .join(Inventory, Inventory.product_id == Product.id)
-        .filter(Inventory.company_id == company_id)
-        .group_by(Category.id, Category.name)
+        .join(
+            Product,
+            Product.category_id == Category.id
+        )
+        .join(
+            Inventory,
+            Inventory.product_id == Product.id
+        )
+        .filter(
+            Inventory.company_id == company_id
+        )
+        .group_by(
+            Category.id,
+            Category.name
+        )
         .order_by(
             func.coalesce(
                 func.sum(
                     Inventory.available_stock * Product.unit_price
                 ),
-                0,
+                0
             ).desc()
         )
         .all()
@@ -449,6 +718,249 @@ def get_inventory_value_by_category(db: Session, company_id: int):
         {
             "category_name": row.category_name,
             "inventory_value": float(row.inventory_value),
+        }
+        for row in data
+    ]
+
+def get_sales_summary(
+    db: Session,
+    company_id: int,
+    date_from=None,
+    date_to=None,
+):
+    """
+    Sales Analytics Summary
+    """
+
+    # Total Revenue
+    revenue_query = (
+        db.query(
+            func.coalesce(func.sum(Sale.total_amount), 0)
+        )
+        .filter(Sale.company_id == company_id)
+    )
+
+    revenue_query = apply_date_filter(
+        revenue_query,
+        date_from,
+        date_to,
+    )
+
+    total_revenue = revenue_query.scalar()
+
+    # Total Orders
+    orders_query = (
+        db.query(func.count(Sale.id))
+        .filter(Sale.company_id == company_id)
+    )
+
+    orders_query = apply_date_filter(
+        orders_query,
+        date_from,
+        date_to,
+    )
+
+    total_orders = orders_query.scalar()
+
+    # Average Order Value
+    average_order_value = (
+        total_revenue / total_orders
+        if total_orders > 0
+        else 0
+    )
+
+    # Total Items Sold
+    items_query = (
+        db.query(
+            func.coalesce(func.sum(SaleItem.quantity), 0)
+        )
+        .join(
+            Sale,
+            Sale.id == SaleItem.sale_id
+        )
+        .filter(Sale.company_id == company_id)
+    )
+
+    items_query = apply_date_filter(
+        items_query,
+        date_from,
+        date_to,
+    )
+
+    total_items_sold = items_query.scalar()
+
+    # Total Discount
+    discount_query = (
+        db.query(
+            func.coalesce(func.sum(Sale.discount), 0)
+        )
+        .filter(Sale.company_id == company_id)
+    )
+
+    discount_query = apply_date_filter(
+        discount_query,
+        date_from,
+        date_to,
+    )
+
+    total_discount = discount_query.scalar()
+
+    # Total Tax
+    tax_query = (
+        db.query(
+            func.coalesce(func.sum(Sale.tax), 0)
+        )
+        .filter(Sale.company_id == company_id)
+    )
+
+    tax_query = apply_date_filter(
+        tax_query,
+        date_from,
+        date_to,
+    )
+
+    total_tax = tax_query.scalar()
+
+    return SalesSummaryResponse(
+        total_revenue=float(total_revenue or 0),
+        total_orders=int(total_orders or 0),
+        average_order_value=round(
+            float(average_order_value or 0),
+            2
+        ),
+        total_items_sold=int(total_items_sold or 0),
+        total_discount=float(total_discount or 0),
+        total_tax=float(total_tax or 0),
+    )
+
+def get_sales_vs_orders(
+    db: Session,
+    company_id: int,
+    period: str = "daily",
+    date_from=None,
+    date_to=None,
+):
+    """
+    Revenue vs order count by daily, weekly, or monthly period.
+    """
+
+    if period not in ["daily", "weekly", "monthly"]:
+        raise ValueError(
+            "Period must be daily, weekly, or monthly"
+        )
+
+    if period == "daily":
+        date_group = cast(
+            Sale.sale_date,
+            Date
+        )
+
+    elif period == "weekly":
+        date_group = func.date_trunc(
+            "week",
+            Sale.sale_date
+        )
+
+    else:
+        date_group = func.date_trunc(
+            "month",
+            Sale.sale_date
+        )
+
+    query = (
+        db.query(
+            date_group.label("date"),
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).label("revenue"),
+            func.count(Sale.id).label("orders"),
+        )
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(date_group)
+        .order_by(date_group)
+        .all()
+    )
+
+    return [
+        {
+            "date": str(row.date.date())
+            if hasattr(row.date, "date")
+            else str(row.date),
+            "revenue": float(row.revenue),
+            "orders": int(row.orders),
+        }
+        for row in data
+    ]
+
+def get_top_customers(
+    db: Session,
+    company_id: int,
+    date_from=None,
+    date_to=None,
+):
+    """
+    Top customers ranked by total revenue.
+    """
+
+    query = (
+        db.query(
+            Sale.customer_name.label("customer_name"),
+            func.count(Sale.id).label("orders"),
+            func.coalesce(
+                func.sum(Sale.total_amount),
+                0
+            ).label("total_spend"),
+            func.coalesce(
+                func.avg(Sale.total_amount),
+                0
+            ).label("average_order_value"),
+        )
+        .filter(
+            Sale.company_id == company_id
+        )
+    )
+
+    query = apply_date_filter(
+        query,
+        date_from,
+        date_to,
+    )
+
+    data = (
+        query
+        .group_by(
+            Sale.customer_id,
+            Sale.customer_name,
+        )
+        .order_by(
+            func.sum(Sale.total_amount).desc()
+        )
+        .limit(10)
+        .all()
+    )
+
+    return [
+        {
+            "customer_name": row.customer_name,
+            "orders": int(row.orders),
+            "total_spend": float(row.total_spend),
+            "average_order_value": round(
+                float(row.average_order_value),
+                2
+            ),
         }
         for row in data
     ]

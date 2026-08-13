@@ -52,7 +52,6 @@ from app.routes.audit_routes import router as audit_router
 from app.routes.customer_routes import router as customer_router
 from app.routes.demand_forecast_routes import router as demand_forecast_router
 
-
 # ============================================================
 # Create Database Tables
 # ============================================================

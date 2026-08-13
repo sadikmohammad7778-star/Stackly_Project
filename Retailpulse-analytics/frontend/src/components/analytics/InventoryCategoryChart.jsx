@@ -26,7 +26,7 @@ export default function InventoryCategoryChart({ data }) {
           <Tooltip />
 
           <Bar
-            dataKey="available_stock"
+            dataKey="stock"
             fill="#2563eb"
           />
         </BarChart>

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-
+from datetime import date
 from app.schemas.analytics_schema import (
     RevenueReport,
     InventoryReport,
@@ -15,6 +15,9 @@ from app.schemas.analytics_schema import (
     InventoryCategoryItem,
     StockStatusItem,
     InventoryValueItem,
+    SalesSummaryResponse,
+    SalesVsOrdersItem,
+    TopCustomerItem,
 )
 
 from app.services.analytics_service import (
@@ -29,6 +32,10 @@ from app.services.analytics_service import (
     get_inventory_by_category,
     get_stock_status_summary,
     get_inventory_value_by_category,
+    get_sales_summary,
+    get_sales_vs_orders,
+    get_top_customers,
+    get_date_range,
 )
 
 router = APIRouter(
@@ -92,13 +99,18 @@ def dashboard(
 )
 def revenue_trend(
     company_id: int,
+    period: str = "daily",
+    date_from: date | None = None,
+    date_to: date | None = None,
     db: Session = Depends(get_db),
 ):
     return get_revenue_trend(
         db,
         company_id,
+        period,
+        date_from,
+        date_to,
     )
-
 
 # Top Products
 
@@ -109,13 +121,18 @@ def revenue_trend(
 )
 def top_products(
     company_id: int,
+    sort_by: str = "revenue",
+    date_from: date | None = None,
+    date_to: date | None = None,
     db: Session = Depends(get_db),
 ):
     return get_top_products(
         db,
         company_id,
+        sort_by,
+        date_from,
+        date_to,
     )
-
 
 
 # Top Categories
@@ -127,11 +144,15 @@ def top_products(
 )
 def top_categories(
     company_id: int,
+    date_from: date | None = None,
+    date_to: date | None = None,
     db: Session = Depends(get_db),
 ):
     return get_top_categories(
         db,
         company_id,
+        date_from,
+        date_to,
     )
 
 
@@ -145,13 +166,16 @@ def top_categories(
 )
 def payment_methods(
     company_id: int,
+    date_from: date | None = None,
+    date_to: date | None = None,
     db: Session = Depends(get_db),
 ):
     return get_payment_method_analysis(
         db,
         company_id,
+        date_from,
+        date_to,
     )
-
 
 
 # Sales Channels
@@ -163,13 +187,16 @@ def payment_methods(
 )
 def sales_channels(
     company_id: int,
+    date_from: date | None = None,
+    date_to: date | None = None,
     db: Session = Depends(get_db),
 ):
     return get_sales_channel_analysis(
         db,
         company_id,
+        date_from,
+        date_to,
     )
-
 
 
 # Inventory by Category
@@ -221,3 +248,64 @@ def inventory_value(
         db,
         company_id,
     )
+
+
+@router.get(
+    "/sales/summary",
+    response_model=SalesSummaryResponse,
+)
+def sales_summary(
+    company_id: int,
+    date_range: str = "all",
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: Session = Depends(get_db),
+):
+    if date_range != "all":
+        date_from, date_to = get_date_range(
+            date_range
+        )
+
+    return get_sales_summary(
+        db,
+        company_id,
+        date_from,
+        date_to,
+    )
+
+@router.get(
+    "/sales-vs-orders",
+    response_model=list[SalesVsOrdersItem],
+)
+def sales_vs_orders(
+    company_id: int,
+    period: str = "daily",
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: Session = Depends(get_db),
+):
+   return get_sales_vs_orders(
+        db,
+        company_id,
+        period,
+        date_from,
+        date_to,
+    )
+
+@router.get(
+    "/top-customers",
+    response_model=list[TopCustomerItem],
+)
+def top_customers(
+    company_id: int,
+    date_from: date | None = None,
+    date_to: date | None = None,
+    db: Session = Depends(get_db),
+):
+    return get_top_customers(
+        db,
+        company_id,
+        date_from,
+        date_to,
+    )
+

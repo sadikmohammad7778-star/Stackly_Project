@@ -24,7 +24,7 @@ export default function StockStatusChart({ data }) {
         <PieChart>
           <Pie
             data={data}
-            dataKey="count"
+            dataKey="total_products"
             nameKey="stock_status"
             outerRadius={110}
             label

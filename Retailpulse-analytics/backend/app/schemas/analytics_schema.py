@@ -43,16 +43,20 @@ class RevenueTrend(BaseModel):
     label: str
     revenue: float
 
+class SalesVsOrdersItem(BaseModel):
+    date: str
+    revenue: float
+    orders: int
 
 class SalesTrend(BaseModel):
     label: str
     orders: int
 
 
-class TopProduct(BaseModel):
+class TopProductItem(BaseModel):
     product_name: str
     quantity_sold: int
-
+    revenue: float
 
 class TopCategory(BaseModel):
     category_name: str
@@ -93,9 +97,6 @@ class RevenueTrendItem(BaseModel):
     date: str
     revenue: float    
 
-class TopProductItem(BaseModel):
-    product_name: str
-    quantity_sold: int    
 
 class TopCategoryItem(BaseModel):
     category_name: str
@@ -103,7 +104,9 @@ class TopCategoryItem(BaseModel):
 
 class PaymentMethodItem(BaseModel):
     payment_method: str
-    total_sales: float    
+    transaction_count: int
+    total_sales: float 
+       
 
 class SalesChannelItem(BaseModel):
     sales_channel: str
@@ -120,3 +123,20 @@ class StockStatusItem(BaseModel):
 class InventoryValueItem(BaseModel):
     category_name: str
     inventory_value: float    
+
+
+
+class SalesSummaryResponse(BaseModel):
+    total_revenue: float
+    total_orders: int
+    average_order_value: float
+    total_items_sold: int
+    total_discount: float
+    total_tax: float
+
+
+class TopCustomerItem(BaseModel):
+    customer_name: str
+    orders: int
+    total_spend: float
+    average_order_value: float
