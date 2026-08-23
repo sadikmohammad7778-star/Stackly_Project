@@ -11,59 +11,90 @@ import {
 
 import "./ForecastChart.css";
 
-export default function ForecastChart({ recommendation }) {
+export default function ForecastChart({ forecast = [] }) {
 
-    if (!recommendation) {
-        return null;
+    const chartData = forecast.map((item) => ({
+        product: item.product_name,
+        dailyDemand: Number(item.average_daily_sales || 0),
+        forecastDemand: Number(item.forecasted_demand || 0),
+    }));
+
+    if (chartData.length === 0) {
+        return (
+            <div className="forecast-chart-card">
+                <h2>Demand Forecast</h2>
+
+                <div className="forecast-chart-empty">
+                    No forecast data available.
+                </div>
+            </div>
+        );
     }
-
-    const data = [
-        {
-            name: "Daily Demand",
-            value: Number(
-                recommendation.average_daily_sales || 0
-            ),
-        },
-        {
-            name: "Forecast Demand",
-            value: Number(
-                recommendation.forecasted_demand || 0
-            ),
-        },
-    ];
 
     return (
         <div className="forecast-chart-card">
 
-            <h2>Demand Forecast</h2>
+            <div className="forecast-chart-header">
+                <div>
+                    <h2>Demand Forecast</h2>
 
-            <p>
-                Historical average demand compared with
-                forecasted demand.
-            </p>
+                    <p>
+                        Daily demand compared with forecasted demand.
+                    </p>
+                </div>
+            </div>
 
             <div className="forecast-chart">
 
                 <ResponsiveContainer
                     width="100%"
-                    height={280}
+                    height={350}
                 >
 
-                    <BarChart data={data}>
+                    <BarChart
+                        data={chartData}
+                        margin={{
+                            top: 10,
+                            right: 20,
+                            left: 0,
+                            bottom: 10,
+                        }}
+                    >
 
-                        <CartesianGrid strokeDasharray="3 3" />
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                        />
 
-                        <XAxis dataKey="name" />
+                        <XAxis
+                            dataKey="product"
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                        />
 
-                        <YAxis />
+                        <YAxis
+                            allowDecimals
+                        />
 
-                        <Tooltip />
+                        <Tooltip
+                            formatter={(value) =>
+                                Number(value).toFixed(2)
+                            }
+                        />
 
                         <Legend />
 
                         <Bar
-                            dataKey="value"
-                            name="Demand"
+                            dataKey="dailyDemand"
+                            name="Daily Demand"
+                            fill="#6366F1"
+                            radius={[6, 6, 0, 0]}
+                        />
+
+                        <Bar
+                            dataKey="forecastDemand"
+                            name="Forecast Demand"
+                            fill="#22C55E"
+                            radius={[6, 6, 0, 0]}
                         />
 
                     </BarChart>

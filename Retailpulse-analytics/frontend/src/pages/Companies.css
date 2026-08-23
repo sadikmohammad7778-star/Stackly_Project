@@ -1,145 +1,184 @@
-.companies-page{
+/* Companies / Categories / Products */
 
-    display:flex;
-
-    flex-direction:column;
-
-    gap:25px;
-
+.companies-page {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
 }
 
-.companies-header{
+/* Header */
 
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:center;
-
+.companies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.companies-header button{
+.companies-header button {
+    background: #6366F1;
+    color: #FFFFFF;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
 
-    background:#6366F1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
-    color:white;
-
-    border:none;
-
-    padding:12px 18px;
-
-    border-radius:10px;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-    cursor:pointer;
-
+    cursor: pointer;
 }
 
-.search-box{
+/* Category Search */
 
-    display:flex;
+.category-search-box,
+.product-search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
-    align-items:center;
+    width: 100%;
+    height: 48px;
 
-    gap:10px;
+    padding: 0 15px;
+    box-sizing: border-box;
 
-    background:white;
-
-    padding:15px;
-
-    border-radius:10px;
-
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
 }
 
-.search-box input{
-
-    border:none;
-
-    outline:none;
-
-    width:100%;
-
+.category-search-box svg,
+.product-search-box svg {
+    color: #64748B;
+    flex-shrink: 0;
 }
 
-.table-card{
+.category-search-box input,
+.product-search-box input {
+    width: 100%;
+    height: 100%;
 
-    background:white;
+    border: none;
+    outline: none;
+    background: transparent;
 
-    border-radius:15px;
-
-    padding:20px;
-
-    box-shadow:0 8px 20px rgba(0,0,0,.05);
-
+    font-size: 15px;
 }
 
-table{
-
-    width:100%;
-
-    border-collapse:collapse;
-
+.category-search-box input::placeholder,
+.product-search-box input::placeholder {
+    color: #94A3B8;
 }
 
-th,td{
+/* Table */
 
-    padding:15px;
+.table-card {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
 
-    border-bottom:1px solid #E5E7EB;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
 
+    overflow-x: auto;
 }
 
-.edit,.delete{
-
-    border:none;
-
-    padding:10px;
-
-    border-radius:8px;
-
-    margin-right:8px;
-
-    cursor:pointer;
-
+.table-card table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.edit{
-
-    background:#3B82F6;
-
-    color:white;
-
+.table-card th,
+.table-card td {
+    padding: 15px;
+    border-bottom: 1px solid #E5E7EB;
+    text-align: left;
 }
 
-.delete{
+/* Actions */
 
-    background:#EF4444;
-
-    color:white;
-
+.edit,
+.delete {
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    margin-right: 8px;
+    cursor: pointer;
 }
+
+.edit {
+    background: #3B82F6;
+    color: #FFFFFF;
+}
+
+.delete {
+    background: #EF4444;
+    color: #FFFFFF;
+}
+
+/* Status */
 
 .status {
-  padding: 6px 12px;
-  border-radius: 20px;
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .status.in-stock {
-  background: #22c55e;
+    background: #22C55E;
 }
 
 .status.low-stock {
-  background: #f59e0b;
+    background: #F59E0B;
 }
 
 .status.out-of-stock {
-  background: #ef4444;
+    background: #EF4444;
+}
+
+/* Responsive */
+
+@media (max-width: 992px) {
+
+    .table-card {
+        padding: 15px;
+    }
+
+    .table-card table {
+        min-width: 650px;
+    }
+
+    .table-card th,
+    .table-card td {
+        padding: 11px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .companies-page {
+        gap: 18px;
+    }
+
+    .companies-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .companies-header button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .table-card {
+        padding: 12px;
+    }
+
+    .table-card th,
+    .table-card td {
+        padding: 10px;
+        font-size: 13px;
+    }
 }

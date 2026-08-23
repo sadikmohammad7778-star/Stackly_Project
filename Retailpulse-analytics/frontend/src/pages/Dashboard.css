@@ -163,27 +163,149 @@ tbody tr:hover{
 .dashboard-error button:hover{
     background:#1D4ED8;
 }
+/* =========================
+   Responsive
+========================= */
 
-/* Responsive */
 
-@media(max-width:992px){
+/* Laptop */
 
-    .chart-section{
-        grid-template-columns:1fr;
+@media (max-width: 1200px) {
+
+    .dashboard-page {
+        gap: 25px;
     }
 
-}
-
-@media(max-width:768px){
-
-    .dashboard-header{
-        flex-direction:column;
-        align-items:flex-start;
-        gap:10px;
+    .dashboard-header h1 {
+        font-size: 28px;
     }
 
+    .cards-grid {
+        grid-template-columns:
+            repeat(2, minmax(220px, 1fr));
+        gap: 18px;
+    }
+
+    .chart-section {
+        grid-template-columns: 1.5fr 1fr;
+        gap: 18px;
+    }
+
+    .chart-card,
+    .table-card {
+        padding: 20px;
+    }
 }
 
+
+/* Tablet */
+
+@media (max-width: 992px) {
+
+    .dashboard-page {
+        gap: 22px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 26px;
+    }
+
+    .dashboard-header p {
+        font-size: 14px;
+    }
+
+    .cards-grid {
+        grid-template-columns:
+            repeat(2, minmax(200px, 1fr));
+        gap: 16px;
+    }
+
+    .chart-section {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .chart-card,
+    .table-card {
+        padding: 18px;
+    }
+
+    .chart-placeholder {
+        height: 260px;
+    }
+
+    th,
+    td {
+        padding: 12px;
+    }
+}
+
+
+/* Mobile */
+
+@media (max-width: 768px) {
+
+    .dashboard-page {
+        gap: 18px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 24px;
+    }
+
+    .dashboard-header p {
+        font-size: 14px;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .chart-section {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .chart-card,
+    .table-card {
+        padding: 15px;
+    }
+
+    .chart-card h3,
+    .table-card h3 {
+        font-size: 16px;
+    }
+
+    .chart-placeholder {
+        height: 220px;
+    }
+
+    .table-card {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
+    th,
+    td {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .status {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+}
 @keyframes fadeIn{
 
     from{

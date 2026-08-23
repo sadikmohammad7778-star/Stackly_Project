@@ -114,7 +114,7 @@ export default function Categories() {
 
       {/* ================= Search ================= */}
 
-      <div className="search-box">
+      <div className="category-search-box">
         <FiSearch />
 
         <input

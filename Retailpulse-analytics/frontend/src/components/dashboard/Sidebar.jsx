@@ -49,21 +49,22 @@ const menu = [
   },
 
   {
-    name: "Inventory",
-    path: "/inventory",
-    icon: <FiArchive />,
-  },
+  name: "Inventory",
+  path: "/inventory",
+  icon: <FiArchive />,
+},
 
-  // ==========================
-  // Demand Forecast
-  // ==========================
+{
+  name: "Inventory Forecast",
+  path: "/inventory/forecast",
+  icon: <FiTrendingUp />,
+},
 
-  {
-    name: "Demand Forecast",
-    path: "/forecast",
-    icon: <FiTrendingUp />,
-  },
-
+{
+  name: "Demand Forecast",
+  path: "/forecast",
+  icon: <FiTrendingUp />,
+},
   // ==========================
   // Customer Module
   // ==========================

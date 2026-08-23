@@ -43,14 +43,12 @@ class Attendance(Base):
         default="Present",
     )
 
-    employee = relationship(
-            "Employee",
-            back_populates="attendance_records",
-    )
-
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
     )
 
-    
+    employee = relationship(
+        "Employee",
+        back_populates="attendance_records",
+    )

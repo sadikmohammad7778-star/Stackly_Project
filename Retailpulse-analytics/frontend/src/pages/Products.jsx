@@ -136,7 +136,7 @@ export default function Products() {
 
       {/* ================= Search ================= */}
 
-      <div className="search-box">
+      <div className="product-search-box">
         <FiSearch />
 
         <input

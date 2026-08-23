@@ -1,144 +1,247 @@
-.sidebar{
-    width:260px;
-    height:100vh;
-    background:#0F172A;
-    color:#FFFFFF;
+/* =========================
+   Sidebar
+========================= */
 
-    position:fixed;
-    left:0;
-    top:0;
+.sidebar {
+    width: 260px;
+    height: 100vh;
 
-    display:flex;
-    flex-direction:column;
+    position: fixed;
+    top: 0;
+    left: 0;
 
-    padding:20px;
+    display: flex;
+    flex-direction: column;
 
-    box-sizing:border-box;
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    background: #0F172A;
+    color: #FFFFFF;
+
+    overflow: hidden;
 }
 
-/* Logo */
 
-.logo{
-    text-align:center;
-    margin-bottom:30px;
+/* =========================
+   Logo
+========================= */
+
+.logo {
+    text-align: center;
+    margin-bottom: 30px;
 }
 
-.logo h2{
-    margin:0;
-    font-size:34px;
-    font-weight:700;
-    color:#FFFFFF;
-    letter-spacing:.5px;
+.logo h2 {
+    margin: 0;
+
+    font-size: 34px;
+    font-weight: 700;
+
+    color: #FFFFFF;
 }
 
-.logo span{
-    display:block;
-    margin-top:6px;
-    color:#818CF8;
-    font-size:14px;
-    font-weight:500;
+.logo span {
+    display: block;
+
+    margin-top: 6px;
+
+    color: #818CF8;
+
+    font-size: 14px;
 }
 
-/* Navigation */
 
-nav{
-    flex:1;
-    overflow-y:auto;
-    margin-top:10px;
+/* =========================
+   Navigation
+========================= */
+
+.sidebar nav {
+    flex: 1;
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    margin-top: 10px;
 }
 
-nav::-webkit-scrollbar{
-    width:4px;
+.sidebar nav::-webkit-scrollbar {
+    width: 4px;
 }
 
-nav::-webkit-scrollbar-thumb{
-    background:#374151;
-    border-radius:10px;
+.sidebar nav::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 10px;
 }
 
-/* Menu */
 
-.menu{
-    display:flex;
-    align-items:center;
-    gap:14px;
+/* =========================
+   Menu
+========================= */
 
-    padding:14px 16px;
+.menu {
+    display: flex;
+    align-items: center;
 
-    margin-bottom:8px;
+    gap: 14px;
 
-    color:#CBD5E1;
+    padding: 14px 16px;
+    margin-bottom: 8px;
 
-    text-decoration:none;
+    color: #CBD5E1;
 
-    border-radius:12px;
+    text-decoration: none;
 
-    transition:all .3s ease;
+    border-radius: 12px;
 
-    font-size:17px;
-    font-weight:500;
+    font-size: 17px;
+    font-weight: 500;
+
+    transition: .3s;
 }
 
-.menu svg{
-    font-size:20px;
+.menu svg {
+    font-size: 20px;
+    flex-shrink: 0;
 }
 
-.menu:hover{
-    background:#1E293B;
-    color:#FFFFFF;
-    transform:translateX(4px);
+.menu:hover {
+    background: #1E293B;
+    color: #FFFFFF;
 }
 
-.menu.active{
-    background:#6366F1;
-    color:#FFFFFF;
-    box-shadow:0 8px 20px rgba(99,102,241,.35);
+.menu.active {
+    background: #6366F1;
+    color: #FFFFFF;
+
+    box-shadow: 0 8px 20px rgba(99, 102, 241, .35);
 }
 
-/* Logout */
 
-.logout{
-    width:100%;
+/* =========================
+   Logout
+========================= */
 
-    margin-top:20px;
+.logout {
+    width: 100%;
 
-    background:#EF4444;
+    flex-shrink: 0;
 
-    color:#FFFFFF;
+    margin-top: 12px;
 
-    border:none;
+    padding: 15px;
 
-    padding:15px;
+    background: #EF4444;
+    color: #FFFFFF;
 
-    border-radius:12px;
+    border: none;
+    border-radius: 12px;
 
-    font-size:16px;
-    font-weight:600;
+    font-size: 16px;
+    font-weight: 600;
 
-    cursor:pointer;
+    cursor: pointer;
 
-    transition:.3s;
+    transition: .3s;
 }
 
-.logout:hover{
-    background:#DC2626;
-    transform:translateY(-2px);
+.logout:hover {
+    background: #DC2626;
 }
 
-/* Responsive */
 
-@media(max-width:768px){
+/* =========================
+   Laptop
+========================= */
 
-    .sidebar{
-        width:230px;
+@media (max-width: 1200px) {
+
+    .sidebar {
+        width: 240px;
+        padding: 18px;
     }
 
-    .logo h2{
-        font-size:28px;
+    .logo h2 {
+        font-size: 30px;
     }
 
-    .menu{
-        font-size:15px;
+    .menu {
+        padding: 13px 14px;
+        font-size: 16px;
+    }
+}
+
+
+/* =========================
+   Tablet
+========================= */
+
+@media (max-width: 992px) {
+
+    .sidebar {
+        width: 220px;
+        padding: 16px;
     }
 
+    .logo {
+        margin-bottom: 20px;
+    }
+
+    .logo h2 {
+        font-size: 27px;
+    }
+
+    .menu {
+        padding: 12px;
+        margin-bottom: 6px;
+        font-size: 15px;
+    }
+
+    .logout {
+        padding: 13px;
+        font-size: 15px;
+    }
+}
+
+
+/* =========================
+   Mobile
+========================= */
+
+@media (max-width: 768px) {
+
+    .sidebar {
+        width: 200px;
+        padding: 14px;
+    }
+
+    .logo {
+        margin-bottom: 15px;
+    }
+
+    .logo h2 {
+        font-size: 24px;
+    }
+
+    .logo span {
+        font-size: 12px;
+    }
+
+    .menu {
+        gap: 9px;
+        padding: 11px 10px;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .menu svg {
+        font-size: 17px;
+    }
+
+    .logout {
+        padding: 12px;
+        font-size: 14px;
+    }
 }

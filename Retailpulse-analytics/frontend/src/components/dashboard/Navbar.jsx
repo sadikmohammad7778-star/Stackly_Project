@@ -47,14 +47,21 @@ export default function Navbar() {
       name: "Sales",
       path: "/sales",
     },
-    {
+   {
       name: "Inventory",
       path: "/inventory",
     },
+    
+    {
+      name: "Inventory Forecast",
+      path: "/inventory/forecast",
+    },
+
     {
       name: "Demand Forecast",
       path: "/forecast",
     },
+
     {
       name: "Customers",
       path: "/customers",

@@ -559,11 +559,9 @@ export default function InventoryForecast() {
                     />
                 )}
 
-                {recommendation && (
-                    <ForecastChart
-                        recommendation={recommendation}
-                    />
-                )}
+                <ForecastChart
+                    forecast={sortedForecast}
+                />
 
             </div>
 
