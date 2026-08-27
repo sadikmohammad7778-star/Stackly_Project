@@ -1,0 +1,21 @@
+name,sku,category,price,stock,brand
+Laptop Pro 14,SKU001,Electronics,65000,20,Dell
+Wireless Mouse,SKU002,Accessories,800,50,Logitech
+Mechanical Keyboard,SKU003,Accessories,2500,30,HP
+LED Monitor 24,SKU004,Electronics,12000,15,Samsung
+Bluetooth Headphones,SKU005,Audio,3500,25,Sony
+Smartphone X,SKU006,Mobiles,32000,40,OnePlus
+USB-C Charger,SKU007,Accessories,1200,60,Anker
+Power Bank 20000mAh,SKU008,Accessories,2200,35,MI
+Wireless Earbuds,SKU009,Audio,4500,28,JBL
+Tablet 10 Inch,SKU010,Electronics,18000,18,Lenovo
+Smart TV 43 Inch,SKU011,Electronics,36000,12,LG
+External SSD 1TB,SKU012,Storage,8500,22,Samsung
+USB Flash Drive 64GB,SKU013,Storage,700,75,SanDisk
+Gaming Mouse,SKU014,Accessories,1800,32,Razer
+Gaming Headset,SKU015,Audio,4200,20,HyperX
+Webcam Full HD,SKU016,Electronics,2800,16,Logitech
+WiFi Router,SKU017,Networking,3200,24,TP-Link
+Bluetooth Speaker,SKU018,Audio,3000,27,Boat
+Smart Watch,SKU019,Wearables,5500,14,Noise
+Laptop Backpack,SKU020,Bags,1800,45,American Tourister

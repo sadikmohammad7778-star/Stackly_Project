@@ -174,14 +174,27 @@ def build_sale_response(
 # ============================================================
 # Create Sale
 # ============================================================
-
 def create_sale(
     db: Session,
     sale: SaleCreate,
     user_id: int,
+    company_id: int,
 ):
-
     try:
+
+        # ----------------------------------------------------
+        # Validate Company Access
+        # ----------------------------------------------------
+
+        if sale.company_id != company_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You cannot create a sale for another company.",
+            )
+
+        # ----------------------------------------------------
+        # Validate Company
+        # ----------------------------------------------------
 
         # ----------------------------------------------------
         # Validate Company

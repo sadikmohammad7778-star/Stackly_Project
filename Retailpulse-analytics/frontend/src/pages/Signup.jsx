@@ -41,7 +41,6 @@ export default function Signup() {
       setTimeout(() => {
         navigate("/login");
       }, 1500);
-
     } catch (err) {
       setError(
         err.response?.data?.detail || "Registration failed."
@@ -50,58 +49,130 @@ export default function Signup() {
   };
 
   return (
-    <div className="signup-container">
-      <form className="signup-card" onSubmit={handleSubmit}>
-        <h2>Create Account</h2>
+    <div className="signup-page">
+      <div className="signup-left">
+        <div className="signup-logo">
+          <div className="logo-icon">
+            <span></span>
+            <span></span>
+          </div>
 
-        {error && <p className="error">{error}</p>}
-        {success && <p className="success">{success}</p>}
+          <div>
+            <h1>RetailPulse</h1>
+            <p>Analytics</p>
+          </div>
+        </div>
 
-        <input
-          type="number"
-          name="company_id"
-          placeholder="Company ID"
-          value={formData.company_id}
-          onChange={handleChange}
-          required
-        />
+        <div className="signup-content">
+          <div className="signup-visual">
+            <div className="visual-chart">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
+            <div className="visual-arrow">↗</div>
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
+            <div className="visual-circle"></div>
+          </div>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
+          <h2>Grow with better insights.</h2>
 
-        <button type="submit">Create Account</button>
+          <p>
+            Create your account and make smarter
+            retail decisions with RetailPulse Analytics.
+          </p>
 
-        <p className="login-link">
-          Already have an account?{" "}
-          <span onClick={() => navigate("/login")}>
-            Login
-          </span>
-        </p>
-      </form>
+          <div className="signup-tags">
+            <span>Sales</span>
+            <span>Inventory</span>
+            <span>Analytics</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="signup-right">
+        <div className="signup-form">
+          <div className="signup-header">
+            <h2>Create Account</h2>
+            <p>Create your RetailPulse account</p>
+          </div>
+
+          {error && (
+            <div className="signup-error">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="signup-success">
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="field">
+              <label>Company ID</label>
+              <input
+                type="number"
+                name="company_id"
+                placeholder="Enter company ID"
+                value={formData.company_id}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label>Full Name</label>
+              <input
+                type="text"
+                name="name"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label>Email</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label>Password</label>
+              <input
+                type="password"
+                name="password"
+                placeholder="Create a password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <button type="submit">
+              Create Account
+            </button>
+          </form>
+
+          <p className="login-link">
+            Already have an account?{" "}
+            <span onClick={() => navigate("/login")}>
+              Login
+            </span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

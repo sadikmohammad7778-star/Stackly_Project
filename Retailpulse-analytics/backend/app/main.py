@@ -27,6 +27,8 @@ from app.models.inventory_movement import InventoryMovement
 from app.models.notification import Notification
 from app.models.demand_forecast import DemandForecast
 from app.models.forecast_history import ForecastHistory
+from app.models.import_history import ImportHistory
+from app.models.import_error import ImportError
 
 
 # ============================================================
@@ -55,6 +57,9 @@ from app.routes.inventory_forecasting_routes import (
     router as inventory_forecasting_router
 )
 
+from app.routes.import_routes import (
+    router as import_router
+)
 # ============================================================
 # Create Database Tables
 # ============================================================
@@ -123,6 +128,7 @@ app.include_router(audit_router)
 app.include_router(customer_router)
 app.include_router(demand_forecast_router)
 app.include_router(inventory_forecasting_router)
+app.include_router(import_router)
 
 
 # ============================================================

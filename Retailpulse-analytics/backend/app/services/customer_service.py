@@ -254,6 +254,26 @@ def get_customer_by_id(
 
     return response
 
+def get_customer_model_by_id(
+    db: Session,
+    customer_id: int,
+    company_id: int,
+):
+    customer = (
+        db.query(Customer)
+        .filter(
+            Customer.id == customer_id,
+            Customer.company_id == company_id,
+            Customer.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not customer:
+        raise ValueError("Customer not found.")
+
+    return customer
+
 
 def update_customer(
     db: Session,
@@ -262,7 +282,7 @@ def update_customer(
     company_id: int,
     user_id: int,
 ):
-    existing_customer = get_customer_by_id(
+    existing_customer = get_customer_model_by_id(
         db,
         customer_id,
         company_id,
@@ -299,7 +319,9 @@ def update_customer(
             raise ValueError("Phone number already exists.")
 
     # Update fields
-    update_data = customer.model_dump(exclude_unset=True)
+    update_data = customer.model_dump(
+        exclude_unset=True
+    )
 
     for key, value in update_data.items():
         setattr(existing_customer, key, value)
@@ -314,7 +336,10 @@ def update_customer(
         user_id=user_id,
         module="Customers",
         action="UPDATE",
-        description=f"Customer '{existing_customer.first_name} {existing_customer.last_name}' updated.",
+        description=(
+            f"Customer '{existing_customer.first_name} "
+            f"{existing_customer.last_name}' updated."
+        ),
     )
 
     return existing_customer
@@ -327,13 +352,16 @@ def delete_customer(
     user_id: int,
 ):
 
-    customer = get_customer_by_id(
+    customer = get_customer_model_by_id(
         db,
         customer_id,
         company_id,
     )
 
-    customer_name = f"{customer.first_name} {customer.last_name}"
+    customer_name = (
+        f"{customer.first_name} "
+        f"{customer.last_name}"
+    )
 
     # Soft Delete
     customer.deleted_at = datetime.utcnow()
@@ -346,12 +374,15 @@ def delete_customer(
         user_id=user_id,
         module="Customers",
         action="DELETE",
-        description=f"Customer '{customer_name}' deleted.",
+        description=(
+            f"Customer '{customer_name}' deleted."
+        ),
     )
 
     return {
         "message": "Customer deleted successfully."
     }
+
 def change_customer_status(
     db: Session,
     customer_id: int,
