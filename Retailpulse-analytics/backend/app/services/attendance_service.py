@@ -14,10 +14,14 @@ def create_attendance(
     db: Session,
     attendance: AttendanceCreate,
     user_id: int,
+    company_id: int,
 ):
     employee = (
         db.query(Employee)
-        .filter(Employee.id == attendance.employee_id)
+        .filter(
+            Employee.id == attendance.employee_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -27,7 +31,9 @@ def create_attendance(
             detail="Employee not found."
         )
 
-    new_attendance = Attendance(**attendance.model_dump())
+    new_attendance = Attendance(
+        **attendance.model_dump()
+    )
 
     db.add(new_attendance)
     db.commit()
@@ -35,24 +41,44 @@ def create_attendance(
 
     create_audit_log(
         db=db,
+        company_id=company_id,
         user_id=user_id,
-        action="CREATE",
         module="Attendance",
+        action="CREATE",
+        description=(
+            f"Created attendance record "
+            f"for employee ID {employee.id} "
+            f"on {attendance.attendance_date}"
+        ),
     )
 
     return new_attendance
 
-def get_all_attendance(db: Session):
-    return db.query(Attendance).all()
+
+def get_all_attendance(
+    db: Session,
+    company_id: int,
+):
+    return (
+        db.query(Attendance)
+        .join(Employee)
+        .filter(Employee.company_id == company_id)
+        .all()
+    )
 
 
 def get_attendance_by_id(
     db: Session,
-    attendance_id: int
+    attendance_id: int,
+    company_id: int,
 ):
     attendance = (
         db.query(Attendance)
-        .filter(Attendance.id == attendance_id)
+        .join(Employee)
+        .filter(
+            Attendance.id == attendance_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -70,10 +96,15 @@ def update_attendance(
     attendance_id: int,
     attendance: AttendanceUpdate,
     user_id: int,
+    company_id: int,
 ):
     existing = (
         db.query(Attendance)
-        .filter(Attendance.id == attendance_id)
+        .join(Employee)
+        .filter(
+            Attendance.id == attendance_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -83,7 +114,9 @@ def update_attendance(
             detail="Attendance not found."
         )
 
-    for key, value in attendance.model_dump(exclude_unset=True).items():
+    for key, value in attendance.model_dump(
+        exclude_unset=True
+    ).items():
         setattr(existing, key, value)
 
     db.commit()
@@ -91,9 +124,15 @@ def update_attendance(
 
     create_audit_log(
         db=db,
+        company_id=company_id,
         user_id=user_id,
-        action="UPDATE",
         module="Attendance",
+        action="UPDATE",
+        description=(
+            f"Updated attendance record "
+            f"for employee ID {existing.employee_id} "
+            f"on {existing.attendance_date}"
+        ),
     )
 
     return existing
@@ -103,10 +142,15 @@ def delete_attendance(
     db: Session,
     attendance_id: int,
     user_id: int,
+    company_id: int,
 ):
     attendance = (
         db.query(Attendance)
-        .filter(Attendance.id == attendance_id)
+        .join(Employee)
+        .filter(
+            Attendance.id == attendance_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -116,14 +160,23 @@ def delete_attendance(
             detail="Attendance not found."
         )
 
+    employee_id = attendance.employee_id
+    attendance_date = attendance.attendance_date
+
     db.delete(attendance)
     db.commit()
 
     create_audit_log(
         db=db,
+        company_id=company_id,
         user_id=user_id,
-        action="DELETE",
         module="Attendance",
+        action="DELETE",
+        description=(
+            f"Deleted attendance record "
+            f"for employee ID {employee_id} "
+            f"on {attendance_date}"
+        ),
     )
 
     return {

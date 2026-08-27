@@ -6,20 +6,25 @@ from app.models.user import User
 from app.models.category import Category
 from app.models.product import Product
 from app.models.sale import Sale
+from app.models.sale_item import SaleItem
 
 from app.schemas.dashboard_schema import DashboardSummary
 
-from app.models.sale_item import SaleItem
 
-
-def get_sales_by_category(db: Session):
-
+def get_sales_by_category(
+    db: Session,
+    company_id: int,
+):
     results = (
         db.query(
             Category.name.label("category_name"),
             func.sum(SaleItem.total).label("total_sales"),
         )
-        .join(SaleItem, Category.id == SaleItem.category_id)
+        .join(
+            SaleItem,
+            Category.id == SaleItem.category_id,
+        )
+        .filter(Category.company_id == company_id)
         .group_by(Category.name)
         .all()
     )
@@ -33,33 +38,63 @@ def get_sales_by_category(db: Session):
     ]
 
 
-def get_dashboard_summary(db: Session):
+def get_dashboard_summary(
+    db: Session,
+    company_id: int,
+):
 
-    total_companies = db.query(Company).count()
+    total_companies = (
+        db.query(Company)
+        .filter(Company.id == company_id)
+        .count()
+    )
 
-    total_users = db.query(User).count()
+    total_users = (
+        db.query(User)
+        .filter(User.company_id == company_id)
+        .count()
+    )
 
-    total_categories = db.query(Category).count()
+    total_categories = (
+        db.query(Category)
+        .filter(Category.company_id == company_id)
+        .count()
+    )
 
-    total_products = db.query(Product).count()
+    total_products = (
+        db.query(Product)
+        .filter(Product.company_id == company_id)
+        .count()
+    )
 
-    total_sales = db.query(Sale).count()
+    total_sales = (
+        db.query(Sale)
+        .filter(Sale.company_id == company_id)
+        .count()
+    )
 
     total_revenue = (
         db.query(func.sum(Sale.total_amount))
+        .filter(Sale.company_id == company_id)
         .scalar()
         or 0
     )
 
     low_stock_products = (
         db.query(Product)
-        .filter(Product.stock_quantity <= 10)
+        .filter(
+            Product.company_id == company_id,
+            Product.stock_quantity <= 10,
+        )
         .count()
     )
 
     out_of_stock_products = (
         db.query(Product)
-        .filter(Product.stock_quantity == 0)
+        .filter(
+            Product.company_id == company_id,
+            Product.stock_quantity == 0,
+        )
         .count()
     )
 
@@ -74,26 +109,33 @@ def get_dashboard_summary(db: Session):
         out_of_stock_products=out_of_stock_products,
     )
 
-def get_monthly_sales(db: Session):
+
+def get_monthly_sales(
+    db: Session,
+    company_id: int,
+):
 
     results = (
         db.query(
             func.to_char(
-                Sale.created_at,
-                "YYYY-MM"
+                Sale.sale_date,
+                "YYYY-MM",
             ).label("month"),
-            func.sum(Sale.total_amount).label("revenue"),
+            func.sum(
+                Sale.total_amount
+            ).label("revenue"),
         )
+        .filter(Sale.company_id == company_id)
         .group_by(
             func.to_char(
-                Sale.created_at,
-                "YYYY-MM"
+                Sale.sale_date,
+                "YYYY-MM",
             )
         )
         .order_by(
             func.to_char(
-                Sale.created_at,
-                "YYYY-MM"
+                Sale.sale_date,
+                "YYYY-MM",
             )
         )
         .all()
@@ -107,16 +149,29 @@ def get_monthly_sales(db: Session):
         for row in results
     ]
 
-def get_top_products(db: Session):
+def get_top_products(
+    db: Session,
+    company_id: int,
+):
 
     results = (
         db.query(
             Product.name.label("product_name"),
-            func.sum(SaleItem.quantity).label("quantity_sold"),
+            func.sum(
+                SaleItem.quantity
+            ).label("quantity_sold"),
         )
-        .join(SaleItem, Product.id == SaleItem.product_id)
+        .join(
+            SaleItem,
+            Product.id == SaleItem.product_id,
+        )
+        .filter(Product.company_id == company_id)
         .group_by(Product.name)
-        .order_by(func.sum(SaleItem.quantity).desc())
+        .order_by(
+            func.sum(
+                SaleItem.quantity
+            ).desc()
+        )
         .limit(10)
         .all()
     )

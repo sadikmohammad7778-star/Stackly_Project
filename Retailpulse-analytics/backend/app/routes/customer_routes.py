@@ -235,10 +235,6 @@ def get_customer(
     "/{customer_id}",
     response_model=CustomerResponse,
 )
-@router.put(
-    "/{customer_id}",
-    response_model=CustomerResponse,
-)
 def edit_customer(
     customer_id: int,
     customer: CustomerUpdate,

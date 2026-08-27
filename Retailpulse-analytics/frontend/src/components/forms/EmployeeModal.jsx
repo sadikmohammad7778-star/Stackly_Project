@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createEmployee } from "../../api/employeeApi";
 import "./CompanyModal.css";
 
@@ -7,9 +7,7 @@ export default function EmployeeModal({
   onClose,
   onSuccess,
 }) {
-  const initialData = {
-    company_id: "",
-    employee_code: "",
+  const initialForm = {
     first_name: "",
     last_name: "",
     email: "",
@@ -19,39 +17,59 @@ export default function EmployeeModal({
     joining_date: "",
   };
 
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState(initialForm);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData(initialForm);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-      await createEmployee(formData);
+      const employeeData = {
+        ...formData,
+        salary: Number(formData.salary),
+      };
 
-      alert("Employee created successfully");
+      await createEmployee(employeeData);
 
+      alert("Employee created successfully.");
+
+      setFormData(initialForm);
       onSuccess();
-
       onClose();
 
-      setFormData(initialData);
-
     } catch (error) {
-      console.error(error);
+      console.error("Create employee error:", error);
+
+      alert(
+        error.response?.data?.detail ||
+        "Failed to create employee."
+      );
+
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="modal-overlay">
-
       <div className="modal">
 
         <h2>Add Employee</h2>
@@ -59,29 +77,19 @@ export default function EmployeeModal({
         <form onSubmit={handleSubmit}>
 
           <input
-            name="company_id"
-            placeholder="Company ID"
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="employee_code"
-            placeholder="Employee Code"
-            onChange={handleChange}
-            required
-          />
-
-          <input
+            type="text"
             name="first_name"
             placeholder="First Name"
+            value={formData.first_name}
             onChange={handleChange}
             required
           />
 
           <input
+            type="text"
             name="last_name"
             placeholder="Last Name"
+            value={formData.last_name}
             onChange={handleChange}
             required
           />
@@ -90,20 +98,25 @@ export default function EmployeeModal({
             type="email"
             name="email"
             placeholder="Email"
+            value={formData.email}
             onChange={handleChange}
             required
           />
 
           <input
+            type="text"
             name="phone"
             placeholder="Phone"
+            value={formData.phone}
             onChange={handleChange}
             required
           />
 
           <input
+            type="text"
             name="designation"
             placeholder="Designation"
+            value={formData.designation}
             onChange={handleChange}
             required
           />
@@ -112,6 +125,7 @@ export default function EmployeeModal({
             type="number"
             name="salary"
             placeholder="Salary"
+            value={formData.salary}
             onChange={handleChange}
             required
           />
@@ -119,6 +133,7 @@ export default function EmployeeModal({
           <input
             type="date"
             name="joining_date"
+            value={formData.joining_date}
             onChange={handleChange}
             required
           />
@@ -128,12 +143,16 @@ export default function EmployeeModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={loading}
             >
               Cancel
             </button>
 
-            <button type="submit">
-              Save Employee
+            <button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Save Employee"}
             </button>
 
           </div>
@@ -141,7 +160,6 @@ export default function EmployeeModal({
         </form>
 
       </div>
-
     </div>
   );
 }

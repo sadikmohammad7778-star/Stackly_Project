@@ -13,16 +13,14 @@ def create_product(
     db: Session,
     product: ProductCreate,
     user_id: int,
+    company_id: int,
 ):
     try:
-        # ----------------------------------------
-        # Check Category
-        # ----------------------------------------
-
         category = (
             db.query(Category)
             .filter(
-                Category.id == product.category_id
+                Category.id == product.category_id,
+                Category.company_id == company_id,
             )
             .first()
         )
@@ -33,19 +31,11 @@ def create_product(
                 detail="Category not found."
             )
 
-        # ----------------------------------------
-        # Validate Stock
-        # ----------------------------------------
-
         if product.stock_quantity < 0:
             raise HTTPException(
                 status_code=400,
                 detail="Stock quantity cannot be negative."
             )
-
-        # ----------------------------------------
-        # Validate Price
-        # ----------------------------------------
 
         if product.unit_price <= 0:
             raise HTTPException(
@@ -53,12 +43,9 @@ def create_product(
                 detail="Unit price must be greater than zero."
             )
 
-        # ----------------------------------------
-        # Generate SKU
-        # ----------------------------------------
-
         last_product = (
             db.query(Product)
+            .filter(Product.company_id == company_id)
             .order_by(Product.id.desc())
             .first()
         )
@@ -67,10 +54,6 @@ def create_product(
             sku = f"SKU-{last_product.id + 1:05d}"
         else:
             sku = "SKU-00001"
-
-        # ----------------------------------------
-        # Determine Initial Stock Status
-        # ----------------------------------------
 
         initial_stock = product.stock_quantity
 
@@ -81,12 +64,8 @@ def create_product(
         else:
             stock_status = "In Stock"
 
-        # ----------------------------------------
-        # Create Product
-        # ----------------------------------------
-
         db_product = Product(
-            company_id=product.company_id,
+            company_id=company_id,
             category_id=product.category_id,
             name=product.name,
             sku=sku,
@@ -99,16 +78,10 @@ def create_product(
         )
 
         db.add(db_product)
-
-        # Get generated Product ID
         db.flush()
 
-        # ----------------------------------------
-        # Create Inventory Record
-        # ----------------------------------------
-
         db_inventory = Inventory(
-            company_id=product.company_id,
+            company_id=company_id,
             product_id=db_product.id,
             current_stock=initial_stock,
             reserved_stock=0,
@@ -119,13 +92,9 @@ def create_product(
 
         db.add(db_inventory)
 
-        # ----------------------------------------
-        # Audit
-        # ----------------------------------------
-
         create_audit_log(
             db=db,
-            company_id=db_product.company_id,
+            company_id=company_id,
             user_id=user_id,
             module="Product",
             action="CREATE",
@@ -136,12 +105,7 @@ def create_product(
             ),
         )
 
-        # ----------------------------------------
-        # Commit Product + Inventory + Audit
-        # ----------------------------------------
-
         db.commit()
-
         db.refresh(db_product)
 
         return db_product
@@ -152,17 +116,21 @@ def create_product(
 
     except Exception as exc:
         db.rollback()
-
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create product: {str(exc)}"
         )
-    
-# -----------------------------
-# Get All Products
-# -----------------------------
-def get_all_products(db: Session, search: str = None):
-    query = db.query(Product)
+
+
+def get_all_products(
+    db: Session,
+    search: str = None,
+    company_id: int = None,
+):
+    query = (
+        db.query(Product)
+        .filter(Product.company_id == company_id)
+    )
 
     if search:
         query = query.filter(
@@ -172,16 +140,17 @@ def get_all_products(db: Session, search: str = None):
     return query.all()
 
 
-# -----------------------------
-# Get Product By ID
-# -----------------------------
 def get_product_by_id(
     db: Session,
     product_id: int,
+    company_id: int,
 ):
     product = (
         db.query(Product)
-        .filter(Product.id == product_id)
+        .filter(
+            Product.id == product_id,
+            Product.company_id == company_id,
+        )
         .first()
     )
 
@@ -193,18 +162,20 @@ def get_product_by_id(
 
     return product
 
-# --------------------
-# Update Product
-# -------------------
+
 def update_product(
     db: Session,
     product_id: int,
     product: ProductUpdate,
     user_id: int,
+    company_id: int,
 ):
     db_product = (
         db.query(Product)
-        .filter(Product.id == product_id)
+        .filter(
+            Product.id == product_id,
+            Product.company_id == company_id,
+        )
         .first()
     )
 
@@ -219,9 +190,7 @@ def update_product(
             exclude_unset=True
         )
 
-        # ----------------------------------------
-        # Validate Price
-        # ----------------------------------------
+        update_data.pop("company_id", None)
 
         if (
             "unit_price" in update_data
@@ -232,26 +201,29 @@ def update_product(
                 detail="Unit price must be greater than zero."
             )
 
-        # ----------------------------------------
-        # Handle Stock Separately
-        # ----------------------------------------
-
         new_stock = update_data.pop(
             "stock_quantity",
             None
         )
 
-        # Update normal Product fields
-        for key, value in update_data.items():
-            setattr(
-                db_product,
-                key,
-                value
+        if "category_id" in update_data:
+            category = (
+                db.query(Category)
+                .filter(
+                    Category.id == update_data["category_id"],
+                    Category.company_id == company_id,
+                )
+                .first()
             )
 
-        # ----------------------------------------
-        # Synchronize Inventory
-        # ----------------------------------------
+            if not category:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Category not found."
+                )
+
+        for key, value in update_data.items():
+            setattr(db_product, key, value)
 
         if new_stock is not None:
 
@@ -264,10 +236,8 @@ def update_product(
             inventory = (
                 db.query(Inventory)
                 .filter(
-                    Inventory.product_id
-                    == db_product.id,
-                    Inventory.company_id
-                    == db_product.company_id,
+                    Inventory.product_id == db_product.id,
+                    Inventory.company_id == company_id,
                 )
                 .with_for_update()
                 .first()
@@ -289,40 +259,24 @@ def update_product(
             inventory.stock_status = (
                 "Out of Stock"
                 if inventory.available_stock == 0
-                else
-                "Low Stock"
-                if inventory.available_stock
-                <= inventory.reorder_level
-                else
-                "In Stock"
+                else "Low Stock"
+                if inventory.available_stock <= inventory.reorder_level
+                else "In Stock"
             )
 
-            db_product.stock_quantity = (
-                inventory.current_stock
-            )
-
-            db_product.status = (
-                inventory.stock_status
-            )
-
-        # ----------------------------------------
-        # Audit
-        # ----------------------------------------
+            db_product.stock_quantity = inventory.current_stock
+            db_product.status = inventory.stock_status
 
         create_audit_log(
             db=db,
-            company_id=db_product.company_id,
+            company_id=company_id,
             user_id=user_id,
             module="Product",
             action="UPDATE",
-            description=(
-                f"Updated product "
-                f"'{db_product.name}'"
-            ),
+            description=f"Updated product '{db_product.name}'",
         )
 
         db.commit()
-
         db.refresh(db_product)
 
         return db_product
@@ -333,22 +287,24 @@ def update_product(
 
     except Exception as exc:
         db.rollback()
-
         raise HTTPException(
             status_code=500,
             detail=f"Failed to update product: {str(exc)}"
         )
-# -----------------------------
-# Delete Product
-# -----------------------------
+
+
 def delete_product(
     db: Session,
     product_id: int,
     user_id: int,
+    company_id: int,
 ):
     db_product = (
         db.query(Product)
-        .filter(Product.id == product_id)
+        .filter(
+            Product.id == product_id,
+            Product.company_id == company_id,
+        )
         .first()
     )
 
@@ -359,7 +315,6 @@ def delete_product(
         )
 
     product_name = db_product.name
-    company_id = db_product.company_id
 
     db.delete(db_product)
     db.commit()
@@ -378,16 +333,15 @@ def delete_product(
     }
 
 
-# -----------------------------
-# Search Products
-# -----------------------------
 def search_products(
     db: Session,
     keyword: str,
+    company_id: int,
 ):
     return (
         db.query(Product)
         .filter(
+            Product.company_id == company_id,
             or_(
                 Product.name.ilike(f"%{keyword}%"),
                 Product.sku.ilike(f"%{keyword}%"),
@@ -397,42 +351,45 @@ def search_products(
     )
 
 
-# -----------------------------
-# Filter By Category
-# -----------------------------
 def get_products_by_category(
     db: Session,
     category_id: int,
+    company_id: int,
 ):
     return (
         db.query(Product)
-        .filter(Product.category_id == category_id)
+        .filter(
+            Product.category_id == category_id,
+            Product.company_id == company_id,
+        )
         .all()
     )
 
 
-# -----------------------------
-# Low Stock Products
-# -----------------------------
 def low_stock_products(
     db: Session,
+    company_id: int,
     limit: int = 10,
 ):
     return (
         db.query(Product)
-        .filter(Product.stock_quantity <= limit)
+        .filter(
+            Product.company_id == company_id,
+            Product.stock_quantity <= limit,
+        )
         .all()
     )
 
 
-# -----------------------------
-# Out Of Stock Products
-# -----------------------------
 def out_of_stock_products(
     db: Session,
+    company_id: int,
 ):
     return (
         db.query(Product)
-        .filter(Product.stock_quantity == 0)
+        .filter(
+            Product.company_id == company_id,
+            Product.stock_quantity == 0,
+        )
         .all()
     )

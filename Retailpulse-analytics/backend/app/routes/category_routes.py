@@ -11,7 +11,9 @@ from app.schemas.category_schema import (
     CategoryUpdate,
     CategoryResponse,
 )
+
 from app.services import category_service
+
 
 router = APIRouter(
     prefix="/categories",
@@ -29,24 +31,31 @@ def create_category(
         db,
         category,
         current_user.id,
+        current_user.company_id,
     )
 
 
 @router.get("/", response_model=List[CategoryResponse])
 def get_categories(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return category_service.get_all_categories(db)
+    return category_service.get_all_categories(
+        db,
+        current_user.company_id,
+    )
 
 
 @router.get("/{category_id}", response_model=CategoryResponse)
 def get_category(
     category_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return category_service.get_category_by_id(
         db,
         category_id,
+        current_user.company_id,
     )
 
 
@@ -62,6 +71,7 @@ def update_category(
         category_id,
         category,
         current_user.id,
+        current_user.company_id,
     )
 
 
@@ -75,4 +85,5 @@ def delete_category(
         db,
         category_id,
         current_user.id,
+        current_user.company_id,
     )

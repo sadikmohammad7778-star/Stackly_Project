@@ -9,16 +9,14 @@ from app.schemas.category_schema import (
 from app.services.audit_service import create_audit_log
 
 
-# -----------------------------------
-# Create Category
-# -----------------------------------
 def create_category(
     db: Session,
     category: CategoryCreate,
     user_id: int,
+    company_id: int,
 ):
     db_category = Category(
-        company_id=category.company_id,
+        company_id=company_id,
         name=category.name,
         description=category.description,
     )
@@ -29,7 +27,7 @@ def create_category(
 
     create_audit_log(
         db=db,
-        company_id=db_category.company_id,
+        company_id=company_id,
         user_id=user_id,
         module="Category",
         action="CREATE",
@@ -39,23 +37,28 @@ def create_category(
     return db_category
 
 
-# -----------------------------------
-# Get All Categories
-# -----------------------------------
-def get_all_categories(db: Session):
-    return db.query(Category).all()
+def get_all_categories(
+    db: Session,
+    company_id: int,
+):
+    return (
+        db.query(Category)
+        .filter(Category.company_id == company_id)
+        .all()
+    )
 
 
-# -----------------------------------
-# Get Category By ID
-# -----------------------------------
 def get_category_by_id(
     db: Session,
     category_id: int,
+    company_id: int,
 ):
     category = (
         db.query(Category)
-        .filter(Category.id == category_id)
+        .filter(
+            Category.id == category_id,
+            Category.company_id == company_id,
+        )
         .first()
     )
 
@@ -68,18 +71,19 @@ def get_category_by_id(
     return category
 
 
-# -----------------------------------
-# Update Category
-# -----------------------------------
 def update_category(
     db: Session,
     category_id: int,
     category: CategoryUpdate,
     user_id: int,
+    company_id: int,
 ):
     db_category = (
         db.query(Category)
-        .filter(Category.id == category_id)
+        .filter(
+            Category.id == category_id,
+            Category.company_id == company_id,
+        )
         .first()
     )
 
@@ -89,17 +93,22 @@ def update_category(
             detail="Category not found."
         )
 
-    update_data = category.model_dump(exclude_unset=True)
+    update_data = category.model_dump(
+        exclude_unset=True
+    )
 
     for key, value in update_data.items():
-        setattr(db_category, key, value)
+        if key != "company_id":
+            setattr(db_category, key, value)
+
+    db_category.company_id = company_id
 
     db.commit()
     db.refresh(db_category)
 
     create_audit_log(
         db=db,
-        company_id=db_category.company_id,
+        company_id=company_id,
         user_id=user_id,
         module="Category",
         action="UPDATE",
@@ -109,17 +118,18 @@ def update_category(
     return db_category
 
 
-# -----------------------------------
-# Delete Category
-# -----------------------------------
 def delete_category(
     db: Session,
     category_id: int,
     user_id: int,
+    company_id: int,
 ):
     db_category = (
         db.query(Category)
-        .filter(Category.id == category_id)
+        .filter(
+            Category.id == category_id,
+            Category.company_id == company_id,
+        )
         .first()
     )
 
@@ -130,7 +140,6 @@ def delete_category(
         )
 
     category_name = db_category.name
-    company_id = db_category.company_id
 
     db.delete(db_category)
     db.commit()

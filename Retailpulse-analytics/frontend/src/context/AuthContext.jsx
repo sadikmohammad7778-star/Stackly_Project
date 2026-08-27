@@ -19,7 +19,10 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     setToken(null);
+
     localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
   };
 
   return (

@@ -17,7 +17,9 @@ import "./Employees.css";
 
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
+  const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
 
   useEffect(() => {
     loadEmployees();
@@ -48,6 +50,28 @@ export default function Employees() {
     }
   };
 
+  const handleEdit = (employee) => {
+  setSelectedEmployee(employee);
+  setOpenModal(true);
+};
+
+  // Search / Filter employees
+  const filteredEmployees = employees.filter((employee) => {
+    const searchText = search.toLowerCase().trim();
+
+    if (!searchText) return true;
+
+    const fullName =
+      `${employee.first_name} ${employee.last_name}`.toLowerCase();
+
+    return (
+      fullName.includes(searchText) ||
+      employee.employee_code?.toLowerCase().includes(searchText) ||
+      employee.email?.toLowerCase().includes(searchText) ||
+      employee.designation?.toLowerCase().includes(searchText)
+    );
+  });
+
   return (
     <div className="employees-page">
 
@@ -55,7 +79,12 @@ export default function Employees() {
 
         <h2>Employees</h2>
 
-        <button onClick={() => setOpenModal(true)}>
+        <button
+            onClick={() => {
+              setSelectedEmployee(null);
+              setOpenModal(true);
+            }}
+          >
           <FiPlus />
           Add Employee
         </button>
@@ -69,6 +98,8 @@ export default function Employees() {
         <input
           type="text"
           placeholder="Search Employee..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
 
       </div>
@@ -80,23 +111,21 @@ export default function Employees() {
           <thead>
 
             <tr>
-
               <th>Code</th>
               <th>Name</th>
               <th>Email</th>
               <th>Designation</th>
               <th>Salary</th>
               <th>Actions</th>
-
             </tr>
 
           </thead>
 
           <tbody>
 
-            {employees.length > 0 ? (
+            {filteredEmployees.length > 0 ? (
 
-              employees.map((employee) => (
+              filteredEmployees.map((employee) => (
 
                 <tr key={employee.id}>
 
@@ -114,9 +143,13 @@ export default function Employees() {
 
                   <td>
 
-                    <button className="edit">
+                    <button
+                      className="edit"
+                      onClick={() => handleEdit(employee)}
+                    >
                       <FiEdit />
                     </button>
+
 
                     <button
                       className="delete"
@@ -151,7 +184,11 @@ export default function Employees() {
 
       <EmployeeModal
         isOpen={openModal}
-        onClose={() => setOpenModal(false)}
+        employee={selectedEmployee}
+        onClose={() => {
+          setOpenModal(false);
+          setSelectedEmployee(null);
+        }}
         onSuccess={loadEmployees}
       />
 

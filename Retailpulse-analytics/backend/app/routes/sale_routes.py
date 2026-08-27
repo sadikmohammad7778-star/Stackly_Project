@@ -52,8 +52,8 @@ def create_sale(
         db=db,
         sale=sale,
         user_id=current_user.id,
+        company_id=current_user.company_id,
     )
-
 
 # ============================================================
 # Sales Dashboard Summary
@@ -220,8 +220,8 @@ def update_sale(
         sale_id=sale_id,
         sale=sale,
         user_id=current_user.id,
+        company_id=current_user.company_id,
     )
-
 
 # ============================================================
 # Delete Sale
@@ -239,4 +239,5 @@ def delete_sale(
         db=db,
         sale_id=sale_id,
         user_id=current_user.id,
+        company_id=current_user.company_id,
     )

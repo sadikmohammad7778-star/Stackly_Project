@@ -1,27 +1,23 @@
-from sqlalchemy import or_, asc, desc
+from sqlalchemy import or_, asc, desc, func
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from fastapi import HTTPException
 
 from app.models.inventory import Inventory
 from app.models.inventory_movement import InventoryMovement
 from app.models.product import Product
-from app.services.audit_service import create_audit_log
+from app.models.category import Category
 
+from app.services.audit_service import create_audit_log
 from app.utils.inventory_utils import calculate_stock_status
+
 from app.schemas.inventory_schema import (
     AddStockRequest,
     RemoveStockRequest,
     AdjustStockRequest,
 )
-from app.models.category import Category
-
 
 
 class InventoryService:
-
-
-
 
     @staticmethod
     def get_inventory(
@@ -34,38 +30,40 @@ class InventoryService:
         sort: str = None,
         order: str = "asc",
     ):
-
         query = (
             db.query(Inventory, Product)
             .join(Product, Inventory.product_id == Product.id)
             .filter(Inventory.company_id == company_id)
         )
 
-        # Search
         if search:
             query = query.filter(
                 or_(
                     Product.name.ilike(f"%{search}%"),
-                    Product.sku.ilike(f"%{search}%")
+                    Product.sku.ilike(f"%{search}%"),
                 )
             )
 
-        # Category
         if category:
-            query = query.filter(Product.category_id == category)
+            query = query.filter(
+                Product.category_id == category
+            )
 
-        # Brand
         if brand:
-            query = query.filter(Product.brand == brand)
+            query = query.filter(
+                Product.brand == brand
+            )
 
-        # Status
         if status:
-            query = query.filter(Inventory.stock_status == status)
+            query = query.filter(
+                Inventory.stock_status == status
+            )
 
-        # Sorting
         if sort == "product_name":
             query = query.order_by(
-                asc(Product.name) if order == "asc" else desc(Product.name)
+                asc(Product.name)
+                if order == "asc"
+                else desc(Product.name)
             )
 
         elif sort == "current_stock":
@@ -76,14 +74,15 @@ class InventoryService:
             )
 
         elif sort == "recent":
-            query = query.order_by(desc(Inventory.updated_at))
+            query = query.order_by(
+                desc(Inventory.updated_at)
+            )
 
         results = query.all()
 
         inventory_data = []
 
         for inventory, product in results:
-
             inventory_data.append(
                 {
                     "id": inventory.id,
@@ -101,18 +100,23 @@ class InventoryService:
                 }
             )
 
-            return inventory_data
+        return inventory_data
 
     @staticmethod
     def add_stock(
         db: Session,
         data: AddStockRequest,
         user_id: int,
+        company_id: int,
     ):
-
-        product = db.query(Product).filter(
-            Product.id == data.product_id
-        ).first()
+        product = (
+            db.query(Product)
+            .filter(
+                Product.id == data.product_id,
+                Product.company_id == company_id,
+            )
+            .first()
+        )
 
         if not product:
             raise HTTPException(
@@ -120,20 +124,24 @@ class InventoryService:
                 detail="Product not found"
             )
 
-        inventory = db.query(Inventory).filter(
-            Inventory.product_id == data.product_id
-        ).first()
+        inventory = (
+            db.query(Inventory)
+            .filter(
+                Inventory.product_id == data.product_id,
+                Inventory.company_id == company_id,
+            )
+            .first()
+        )
 
         if not inventory:
-
             inventory = Inventory(
-                company_id=product.company_id,
+                company_id=company_id,
                 product_id=product.id,
                 current_stock=0,
                 reserved_stock=0,
                 available_stock=0,
                 reorder_level=10,
-                stock_status="Out of Stock"
+                stock_status="Out of Stock",
             )
 
             db.add(inventory)
@@ -142,13 +150,15 @@ class InventoryService:
         previous_quantity = inventory.current_stock
 
         inventory.current_stock += data.quantity
+
         inventory.available_stock = (
-            inventory.current_stock - inventory.reserved_stock
+            inventory.current_stock
+            - inventory.reserved_stock
         )
 
         inventory.stock_status = calculate_stock_status(
             inventory.available_stock,
-            inventory.reorder_level
+            inventory.reorder_level,
         )
 
         movement = InventoryMovement(
@@ -169,15 +179,19 @@ class InventoryService:
 
         create_audit_log(
             db=db,
-            company_id=inventory.company_id,
+            company_id=company_id,
             user_id=user_id,
             module="Inventory",
             action="STOCK_IN",
-            description=f"Added {data.quantity} units to '{product.name}'",
+            description=(
+                f"Added {data.quantity} units "
+                f"to '{product.name}'"
+            ),
         )
+
         return {
             "message": "Stock added successfully",
-            "inventory": inventory
+            "inventory": inventory,
         }
 
     @staticmethod
@@ -185,11 +199,16 @@ class InventoryService:
         db: Session,
         data: RemoveStockRequest,
         user_id: int,
+        company_id: int,
     ):
-
-        product = db.query(Product).filter(
-            Product.id == data.product_id
-        ).first()
+        product = (
+            db.query(Product)
+            .filter(
+                Product.id == data.product_id,
+                Product.company_id == company_id,
+            )
+            .first()
+        )
 
         if not product:
             raise HTTPException(
@@ -197,9 +216,14 @@ class InventoryService:
                 detail="Product not found"
             )
 
-        inventory = db.query(Inventory).filter(
-            Inventory.product_id == data.product_id
-        ).first()
+        inventory = (
+            db.query(Inventory)
+            .filter(
+                Inventory.product_id == data.product_id,
+                Inventory.company_id == company_id,
+            )
+            .first()
+        )
 
         if not inventory:
             raise HTTPException(
@@ -216,13 +240,15 @@ class InventoryService:
         previous_quantity = inventory.current_stock
 
         inventory.current_stock -= data.quantity
+
         inventory.available_stock = (
-            inventory.current_stock - inventory.reserved_stock
+            inventory.current_stock
+            - inventory.reserved_stock
         )
 
         inventory.stock_status = calculate_stock_status(
             inventory.available_stock,
-            inventory.reorder_level
+            inventory.reorder_level,
         )
 
         movement = InventoryMovement(
@@ -240,17 +266,22 @@ class InventoryService:
 
         db.commit()
         db.refresh(inventory)
+
         create_audit_log(
             db=db,
-            company_id=inventory.company_id,
+            company_id=company_id,
             user_id=user_id,
             module="Inventory",
             action="STOCK_OUT",
-            description=f"Removed {data.quantity} units from '{product.name}'",
+            description=(
+                f"Removed {data.quantity} units "
+                f"from '{product.name}'"
+            ),
         )
+
         return {
             "message": "Stock removed successfully",
-            "inventory": inventory
+            "inventory": inventory,
         }
 
     @staticmethod
@@ -258,11 +289,16 @@ class InventoryService:
         db: Session,
         data: AdjustStockRequest,
         user_id: int,
+        company_id: int,
     ):
-
-        product = db.query(Product).filter(
-            Product.id == data.product_id
-        ).first()
+        product = (
+            db.query(Product)
+            .filter(
+                Product.id == data.product_id,
+                Product.company_id == company_id,
+            )
+            .first()
+        )
 
         if not product:
             raise HTTPException(
@@ -270,9 +306,14 @@ class InventoryService:
                 detail="Product not found"
             )
 
-        inventory = db.query(Inventory).filter(
-            Inventory.product_id == data.product_id
-        ).first()
+        inventory = (
+            db.query(Inventory)
+            .filter(
+                Inventory.product_id == data.product_id,
+                Inventory.company_id == company_id,
+            )
+            .first()
+        )
 
         if not inventory:
             raise HTTPException(
@@ -289,13 +330,15 @@ class InventoryService:
         previous_quantity = inventory.current_stock
 
         inventory.current_stock = data.quantity
+
         inventory.available_stock = (
-            inventory.current_stock - inventory.reserved_stock
+            inventory.current_stock
+            - inventory.reserved_stock
         )
 
         inventory.stock_status = calculate_stock_status(
             inventory.available_stock,
-            inventory.reorder_level
+            inventory.reorder_level,
         )
 
         movement = InventoryMovement(
@@ -316,33 +359,54 @@ class InventoryService:
 
         create_audit_log(
             db=db,
-            company_id=inventory.company_id,
+            company_id=company_id,
             user_id=user_id,
             module="Inventory",
             action="ADJUST",
             description=(
                 f"Adjusted stock of '{product.name}' "
-                f"from {previous_quantity} to {inventory.current_stock}"
+                f"from {previous_quantity} "
+                f"to {inventory.current_stock}"
             ),
         )
+
         return {
             "message": "Stock adjusted successfully",
             "inventory": inventory,
         }
 
     @staticmethod
-    def get_movement_history(db: Session):
-
+    def get_movement_history(
+        db: Session,
+        company_id: int,
+    ):
         return (
             db.query(InventoryMovement)
-            .order_by(InventoryMovement.created_at.desc())
+            .join(
+                Inventory,
+                InventoryMovement.inventory_id == Inventory.id,
+            )
+            .filter(
+                Inventory.company_id == company_id
+            )
+            .order_by(
+                InventoryMovement.created_at.desc()
+            )
             .all()
         )
 
     @staticmethod
-    def get_dashboard(db: Session):
-
-        inventories = db.query(Inventory).all()
+    def get_dashboard(
+        db: Session,
+        company_id: int,
+    ):
+        inventories = (
+            db.query(Inventory)
+            .filter(
+                Inventory.company_id == company_id
+            )
+            .all()
+        )
 
         total_products = len(inventories)
 
@@ -367,20 +431,32 @@ class InventoryService:
             "total_products": total_products,
             "total_inventory_quantity": total_inventory,
             "low_stock_products": low_stock,
-            "out_of_stock_products": out_of_stock
+            "out_of_stock_products": out_of_stock,
         }
 
     @staticmethod
-    def inventory_by_category(db: Session, company_id: int):
-
+    def inventory_by_category(
+        db: Session,
+        company_id: int,
+    ):
         result = (
             db.query(
                 Category.name,
-                func.sum(Inventory.current_stock).label("total_stock")
+                func.sum(
+                    Inventory.current_stock
+                ).label("total_stock"),
             )
-            .join(Product, Product.category_id == Category.id)
-            .join(Inventory, Inventory.product_id == Product.id)
-            .filter(Inventory.company_id == company_id)
+            .join(
+                Product,
+                Product.category_id == Category.id,
+            )
+            .join(
+                Inventory,
+                Inventory.product_id == Product.id,
+            )
+            .filter(
+                Inventory.company_id == company_id
+            )
             .group_by(Category.name)
             .all()
         )
@@ -388,27 +464,36 @@ class InventoryService:
         return [
             {
                 "category": row.name,
-                "total_stock": row.total_stock
+                "total_stock": row.total_stock,
             }
             for row in result
         ]
-    @staticmethod
-    def stock_status_distribution(db: Session, company_id: int):
 
+    @staticmethod
+    def stock_status_distribution(
+        db: Session,
+        company_id: int,
+    ):
         result = (
             db.query(
                 Inventory.stock_status,
-                func.count(Inventory.id).label("count")
+                func.count(
+                    Inventory.id
+                ).label("count"),
             )
-            .filter(Inventory.company_id == company_id)
-            .group_by(Inventory.stock_status)
+            .filter(
+                Inventory.company_id == company_id
+            )
+            .group_by(
+                Inventory.stock_status
+            )
             .all()
         )
 
         return [
             {
                 "status": row.stock_status,
-                "count": row.count
+                "count": row.count,
             }
             for row in result
         ]

@@ -706,14 +706,15 @@ def update_sale(
     sale_id: int,
     sale: SaleUpdate,
     user_id: int,
+    company_id: int,
 ):
 
     # Get actual SQLAlchemy Sale object
     db_sale = get_sale_model_by_id(
         db=db,
         sale_id=sale_id,
+        company_id=company_id,
     )
-
     update_data = sale.model_dump(
         exclude_unset=True
     )
@@ -814,11 +815,13 @@ def delete_sale(
     db: Session,
     sale_id: int,
     user_id: int,
+    company_id: int,
 ):
 
-    db_sale = get_sale_by_id(
-        db,
-        sale_id,
+    db_sale = get_sale_model_by_id(
+        db=db,
+        sale_id=sale_id,
+        company_id=company_id,
     )
 
     try:

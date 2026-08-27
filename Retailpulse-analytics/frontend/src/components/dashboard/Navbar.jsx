@@ -15,6 +15,8 @@ import { getUnreadCount } from "../../api/notificationApi";
 export default function Navbar() {
   const navigate = useNavigate();
 
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
@@ -27,77 +29,23 @@ export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
 
   const pages = [
-    {
-      name: "Dashboard",
-      path: "/dashboard",
-    },
-    {
-      name: "Companies",
-      path: "/companies",
-    },
-    {
-      name: "Categories",
-      path: "/categories",
-    },
-    {
-      name: "Products",
-      path: "/products",
-    },
-    {
-      name: "Sales",
-      path: "/sales",
-    },
-   {
-      name: "Inventory",
-      path: "/inventory",
-    },
-    
-    {
-      name: "Inventory Forecast",
-      path: "/inventory/forecast",
-    },
-
-    {
-      name: "Demand Forecast",
-      path: "/forecast",
-    },
-
-    {
-      name: "Customers",
-      path: "/customers",
-    },
-    {
-      name: "Customer Analytics",
-      path: "/customers/dashboard",
-    },
-    {
-      name: "Employees",
-      path: "/employees",
-    },
-    {
-      name: "Departments",
-      path: "/departments",
-    },
-    {
-      name: "Attendance",
-      path: "/attendance",
-    },
-    {
-      name: "Reports",
-      path: "/reports",
-    },
-    {
-      name: "Analytics",
-      path: "/analytics",
-    },
-    {
-      name: "Audit Logs",
-      path: "/audit",
-    },
-    {
-      name: "Settings",
-      path: "/settings",
-    },
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "Companies", path: "/companies" },
+    { name: "Categories", path: "/categories" },
+    { name: "Products", path: "/products" },
+    { name: "Sales", path: "/sales" },
+    { name: "Inventory", path: "/inventory" },
+    { name: "Inventory Forecast", path: "/inventory/forecast" },
+    { name: "Demand Forecast", path: "/forecast" },
+    { name: "Customers", path: "/customers" },
+    { name: "Customer Analytics", path: "/customers/dashboard" },
+    { name: "Employees", path: "/employees" },
+    { name: "Departments", path: "/departments" },
+    { name: "Attendance", path: "/attendance" },
+    { name: "Reports", path: "/reports" },
+    { name: "Analytics", path: "/analytics" },
+    { name: "Audit Logs", path: "/audit" },
+    { name: "Settings", path: "/settings" },
   ];
 
   const filteredPages = pages.filter((page) =>
@@ -123,7 +71,6 @@ export default function Navbar() {
   const loadUnreadCount = async () => {
     try {
       const data = await getUnreadCount();
-
       setUnreadCount(data.count);
     } catch (error) {
       console.error(
@@ -143,15 +90,11 @@ export default function Navbar() {
     return () => clearInterval(interval);
   }, []);
 
-  // Close notification dropdown when clicking outside
-
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (
         notificationRef.current &&
-        !notificationRef.current.contains(
-          event.target
-        )
+        !notificationRef.current.contains(event.target)
       ) {
         setShowNotifications(false);
       }
@@ -172,27 +115,26 @@ export default function Navbar() {
 
   const toggleNotifications = () => {
     setShowNotifications((prev) => !prev);
-
     loadUnreadCount();
   };
 
   return (
     <header className="navbar">
 
-      {/* ================= Left Section ================= */}
+      {/* Left Section */}
 
       <div className="navbar-left">
         <div>
           <h2>RetailPulse Analytics</h2>
-
           <span>{today}</span>
         </div>
       </div>
 
-      {/* ================= Search ================= */}
+      {/* Search */}
 
       <div className="navbar-center">
         <div className="search">
+
           <FiSearch />
 
           <input
@@ -203,9 +145,8 @@ export default function Navbar() {
               setSearchTerm(e.target.value)
             }
           />
-        </div>
 
-        {/* Search Results */}
+        </div>
 
         {searchTerm.trim() && (
           <div className="search-results">
@@ -220,7 +161,6 @@ export default function Navbar() {
                   }
                 >
                   <FiSearch />
-
                   <span>{page.name}</span>
                 </div>
               ))
@@ -234,7 +174,7 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* ================= Right Section ================= */}
+      {/* Right Section */}
 
       <div className="navbar-right">
 
@@ -276,19 +216,22 @@ export default function Navbar() {
         {/* Profile */}
 
         <div className="profile">
+
           <img
             src="https://i.pravatar.cc/100"
             alt="Profile"
           />
 
           <div>
-            <h4>Mohammad Sadik</h4>
+            <h4>{user?.name || "User"}</h4>
 
-            <span>Company Admin</span>
+            <span>{user?.role || "User"}</span>
           </div>
+
         </div>
 
       </div>
+
     </header>
   );
 }

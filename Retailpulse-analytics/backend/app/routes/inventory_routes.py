@@ -5,12 +5,12 @@ from app.config.dependency import get_db, get_current_user
 from app.models.user import User
 
 from app.services.inventory_service import InventoryService
-
 from app.schemas.inventory_schema import (
     AddStockRequest,
     RemoveStockRequest,
     AdjustStockRequest,
 )
+
 router = APIRouter(
     prefix="/inventory",
     tags=["Inventory"],
@@ -19,7 +19,6 @@ router = APIRouter(
 
 @router.get("/")
 def get_inventory(
-    company_id: int,
     search: str = None,
     category: int = None,
     brand: str = None,
@@ -27,10 +26,11 @@ def get_inventory(
     sort: str = None,
     order: str = "asc",
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return InventoryService.get_inventory(
         db,
-        company_id,
+        current_user.company_id,
         search,
         category,
         brand,
@@ -50,6 +50,7 @@ def add_stock(
         db,
         data,
         current_user.id,
+        current_user.company_id,
     )
 
 
@@ -63,6 +64,7 @@ def remove_stock(
         db,
         data,
         current_user.id,
+        current_user.company_id,
     )
 
 
@@ -76,40 +78,49 @@ def adjust_stock(
         db,
         data,
         current_user.id,
+        current_user.company_id,
     )
 
 
 @router.get("/movements")
 def get_movement_history(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return InventoryService.get_movement_history(db)
+    return InventoryService.get_movement_history(
+        db,
+        current_user.company_id,
+    )
 
 
 @router.get("/dashboard")
 def dashboard(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return InventoryService.get_dashboard(db)
+    return InventoryService.get_dashboard(
+        db,
+        current_user.company_id,
+    )
 
 
 @router.get("/category-chart")
 def category_chart(
-    company_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return InventoryService.inventory_by_category(
         db,
-        company_id,
+        current_user.company_id,
     )
 
 
 @router.get("/status-chart")
 def status_chart(
-    company_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return InventoryService.stock_status_distribution(
         db,
-        company_id,
+        current_user.company_id,
     )

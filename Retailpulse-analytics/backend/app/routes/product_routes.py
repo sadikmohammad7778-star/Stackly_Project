@@ -14,15 +14,13 @@ from app.schemas.product_schema import (
 
 from app.services import product_service
 
+
 router = APIRouter(
     prefix="/products",
     tags=["Products"],
 )
 
 
-# -----------------------------
-# Create Product
-# -----------------------------
 @router.post("/", response_model=ProductResponse)
 def create_product(
     product: ProductCreate,
@@ -33,37 +31,36 @@ def create_product(
         db,
         product,
         current_user.id,
+        current_user.company_id,
     )
 
 
-# -----------------------------
-# Get All Products
-# -----------------------------
 @router.get("/", response_model=List[ProductResponse])
 def get_products(
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return product_service.get_all_products(db, search)
+    return product_service.get_all_products(
+        db,
+        search,
+        current_user.company_id,
+    )
 
 
-# -----------------------------
-# Get Product By ID
-# -----------------------------
 @router.get("/{product_id}", response_model=ProductResponse)
 def get_product(
     product_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return product_service.get_product_by_id(
         db,
         product_id,
+        current_user.company_id,
     )
 
 
-# -----------------------------
-# Update Product
-# -----------------------------
 @router.put("/{product_id}", response_model=ProductResponse)
 def update_product(
     product_id: int,
@@ -76,12 +73,10 @@ def update_product(
         product_id,
         product,
         current_user.id,
+        current_user.company_id,
     )
 
 
-# -----------------------------
-# Delete Product
-# -----------------------------
 @router.delete("/{product_id}")
 def delete_product(
     product_id: int,
@@ -92,46 +87,53 @@ def delete_product(
         db,
         product_id,
         current_user.id,
+        current_user.company_id,
     )
 
 
-# -----------------------------
-# Search Products
-# -----------------------------
 @router.get("/search/{keyword}", response_model=List[ProductResponse])
 def search_products(
     keyword: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return product_service.search_products(db, keyword)
+    return product_service.search_products(
+        db,
+        keyword,
+        current_user.company_id,
+    )
 
 
-# -----------------------------
-# Products By Category
-# -----------------------------
 @router.get("/category/{category_id}", response_model=List[ProductResponse])
 def products_by_category(
     category_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return product_service.get_products_by_category(db, category_id)
+    return product_service.get_products_by_category(
+        db,
+        category_id,
+        current_user.company_id,
+    )
 
 
-# -----------------------------
-# Low Stock Products
-# -----------------------------
 @router.get("/low-stock", response_model=List[ProductResponse])
 def low_stock(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return product_service.low_stock_products(db)
+    return product_service.low_stock_products(
+        db,
+        current_user.company_id,
+    )
 
 
-# -----------------------------
-# Out Of Stock Products
-# -----------------------------
 @router.get("/out-of-stock", response_model=List[ProductResponse])
 def out_of_stock(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return product_service.out_of_stock_products(db)
+    return product_service.out_of_stock_products(
+        db,
+        current_user.company_id,
+    )

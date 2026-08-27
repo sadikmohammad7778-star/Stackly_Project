@@ -15,11 +15,11 @@ def create_employee(
     db: Session,
     employee: EmployeeCreate,
     user_id: int,
+    company_id: int,
 ):
-
     company = (
         db.query(Company)
-        .filter(Company.id == employee.company_id)
+        .filter(Company.id == company_id)
         .first()
     )
 
@@ -31,7 +31,10 @@ def create_employee(
 
     existing = (
         db.query(Employee)
-        .filter(Employee.email == employee.email)
+        .filter(
+            Employee.email == employee.email,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -41,9 +44,23 @@ def create_employee(
             detail="Employee email already exists."
         )
 
-    new_employee = Employee(**employee.model_dump())
+    employee_data = employee.model_dump()
+
+    # Do not trust company_id from frontend
+    employee_data["company_id"] = company_id
+
+    # Temporary code to satisfy NOT NULL / unique constraint
+    new_employee = Employee(
+        **employee_data,
+        employee_code="TEMP",
+    )
 
     db.add(new_employee)
+    db.flush()
+
+    # Automatic employee code
+    new_employee.employee_code = f"EMP{new_employee.id:03d}"
+
     db.commit()
     db.refresh(new_employee)
 
@@ -70,9 +87,12 @@ def get_all_employees(
     page: int = 1,
     limit: int = 10,
     search: str = "",
+    company_id: int = None,
 ):
-
-    query = db.query(Employee)
+    query = (
+        db.query(Employee)
+        .filter(Employee.company_id == company_id)
+    )
 
     if search:
         query = query.filter(
@@ -80,6 +100,7 @@ def get_all_employees(
                 Employee.first_name.ilike(f"%{search}%"),
                 Employee.last_name.ilike(f"%{search}%"),
                 Employee.email.ilike(f"%{search}%"),
+                Employee.employee_code.ilike(f"%{search}%"),
             )
         )
 
@@ -97,11 +118,14 @@ def get_all_employees(
 def get_employee_by_id(
     db: Session,
     employee_id: int,
+    company_id: int,
 ):
-
     employee = (
         db.query(Employee)
-        .filter(Employee.id == employee_id)
+        .filter(
+            Employee.id == employee_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -122,11 +146,14 @@ def update_employee(
     employee_id: int,
     employee: EmployeeUpdate,
     user_id: int,
+    company_id: int,
 ):
-
     existing = (
         db.query(Employee)
-        .filter(Employee.id == employee_id)
+        .filter(
+            Employee.id == employee_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -142,6 +169,7 @@ def update_employee(
             .filter(
                 Employee.email == employee.email,
                 Employee.id != employee_id,
+                Employee.company_id == company_id,
             )
             .first()
         )
@@ -152,8 +180,15 @@ def update_employee(
                 detail="Employee email already exists."
             )
 
-    for key, value in employee.model_dump(exclude_unset=True).items():
-        setattr(existing, key, value)
+    for key, value in employee.model_dump(
+        exclude_unset=True
+    ).items():
+
+        # Don't allow changing company from frontend
+        if key != "company_id":
+            setattr(existing, key, value)
+
+    existing.company_id = company_id
 
     db.commit()
     db.refresh(existing)
@@ -180,11 +215,14 @@ def delete_employee(
     db: Session,
     employee_id: int,
     user_id: int,
+    company_id: int,
 ):
-
     employee = (
         db.query(Employee)
-        .filter(Employee.id == employee_id)
+        .filter(
+            Employee.id == employee_id,
+            Employee.company_id == company_id,
+        )
         .first()
     )
 
@@ -194,8 +232,9 @@ def delete_employee(
             detail="Employee not found."
         )
 
-    employee_name = f"{employee.first_name} {employee.last_name}"
-    company_id = employee.company_id
+    employee_name = (
+        f"{employee.first_name} {employee.last_name}"
+    )
 
     db.delete(employee)
     db.commit()

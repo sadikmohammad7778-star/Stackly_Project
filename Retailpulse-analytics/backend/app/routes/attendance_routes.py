@@ -24,7 +24,6 @@ router = APIRouter(
 )
 
 
-# Create Attendance
 @router.post("/", response_model=AttendanceResponse)
 def create_attendance_api(
     attendance: AttendanceCreate,
@@ -35,30 +34,34 @@ def create_attendance_api(
         db,
         attendance,
         current_user.id,
+        current_user.company_id,
     )
 
 
-# Get All Attendance
 @router.get("/", response_model=list[AttendanceResponse])
 def get_attendance(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return get_all_attendance(db)
+    return get_all_attendance(
+        db,
+        current_user.company_id,
+    )
 
 
-# Get Attendance By ID
 @router.get("/{attendance_id}", response_model=AttendanceResponse)
 def get_attendance_by_id_api(
     attendance_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return get_attendance_by_id(
         db,
         attendance_id,
+        current_user.company_id,
     )
 
 
-# Update Attendance
 @router.put("/{attendance_id}", response_model=AttendanceResponse)
 def update_attendance_api(
     attendance_id: int,
@@ -71,10 +74,10 @@ def update_attendance_api(
         attendance_id,
         attendance,
         current_user.id,
+        current_user.company_id,
     )
 
 
-# Delete Attendance
 @router.delete("/{attendance_id}")
 def delete_attendance_api(
     attendance_id: int,
@@ -85,4 +88,5 @@ def delete_attendance_api(
         db,
         attendance_id,
         current_user.id,
+        current_user.company_id,
     )

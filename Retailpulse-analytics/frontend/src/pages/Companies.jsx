@@ -93,7 +93,7 @@ export default function Companies() {
       </div>
 
       {/* Search */}
-      <div className="search-box">
+      <div className="company-search-box">
         <FiSearch />
 
         <input
