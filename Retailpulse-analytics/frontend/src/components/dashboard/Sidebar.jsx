@@ -55,6 +55,12 @@ const menu = [
 },
 
 {
+  name: "Data Import",
+  path: "/data-import",
+  icon: <FiFileText />,
+},
+
+{
   name: "Inventory Forecast",
   path: "/inventory/forecast",
   icon: <FiTrendingUp />,

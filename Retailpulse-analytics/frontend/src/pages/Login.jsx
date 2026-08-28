@@ -50,9 +50,12 @@ export default function Login() {
         JSON.stringify(response.user)
       );
 
-      //  remember email
+      // Remember email
       if (rememberMe) {
-        localStorage.setItem("remember_email", formData.email);
+        localStorage.setItem(
+          "remember_email",
+          formData.email
+        );
       } else {
         localStorage.removeItem("remember_email");
       }
@@ -72,9 +75,11 @@ export default function Login() {
 
       {/* LEFT SIDE */}
       <div className="login-brand-panel">
+
         <div className="brand-content">
 
           <div className="brand-logo">
+
             <div className="logo-icon">
               <span></span>
               <span></span>
@@ -85,29 +90,38 @@ export default function Login() {
               <h1>RetailPulse</h1>
               <p>Analytics</p>
             </div>
+
           </div>
 
           <div className="retail-illustration">
 
-            <div className="chart-card">
+            {/* CHANGED ONLY THIS CLASS */}
+            <div className="login-chart-card">
+
               <div className="chart-bars">
                 <span></span>
                 <span></span>
                 <span></span>
                 <span></span>
               </div>
-              <div className="chart-arrow">↗</div>
+
+              <div className="chart-arrow">Γåù</div>
+
             </div>
 
             <div className="shopping-cart">
+
               <div className="cart-basket">
                 <div></div>
                 <div></div>
                 <div></div>
               </div>
+
               <div className="cart-handle"></div>
+
               <div className="cart-wheel wheel-one"></div>
               <div className="cart-wheel wheel-two"></div>
+
             </div>
 
             <div className="shopping-bag bag-yellow">
@@ -126,6 +140,7 @@ export default function Login() {
           </div>
 
         </div>
+
       </div>
 
       {/* RIGHT SIDE */}
@@ -135,8 +150,9 @@ export default function Login() {
 
           <div className="welcome-section">
             <h2>Welcome Back</h2>
+
             <p>
-              <span className="welcome-icon">◉</span>
+              <span className="welcome-icon">Γùë</span>
               Sign in to your account
             </p>
           </div>
@@ -151,7 +167,10 @@ export default function Login() {
 
             {/* EMAIL */}
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+
+              <label htmlFor="email">
+                Email
+              </label>
 
               <input
                 id="email"
@@ -162,13 +181,18 @@ export default function Login() {
                 onChange={handleChange}
                 required
               />
+
             </div>
 
             {/* PASSWORD */}
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+
+              <label htmlFor="password">
+                Password
+              </label>
 
               <div className="password-wrapper">
+
                 <input
                   id="password"
                   type={
@@ -195,15 +219,18 @@ export default function Login() {
                       : "Show password"
                   }
                 >
-                  {showPassword ? "◉" : "◌"}
+                  {showPassword ? "Γùë" : "Γùî"}
                 </button>
+
               </div>
+
             </div>
 
             {/* REMEMBER + FORGOT */}
             <div className="login-options">
 
               <label className="remember-me">
+
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -213,12 +240,15 @@ export default function Login() {
                 />
 
                 <span>Remember me</span>
+
               </label>
 
               <button
                 type="button"
                 className="forgot-password"
-                onClick={() => navigate("/forgot-password")}
+                onClick={() =>
+                  navigate("/forgot-password")
+                }
               >
                 Forgot Password?
               </button>
@@ -237,7 +267,10 @@ export default function Login() {
 
           {/* SIGNUP */}
           <div className="register-section">
-            <span>Don't have an account?</span>
+
+            <span>
+              Don't have an account?
+            </span>
 
             <button
               type="button"
@@ -245,6 +278,7 @@ export default function Login() {
             >
               Register
             </button>
+
           </div>
 
         </div>

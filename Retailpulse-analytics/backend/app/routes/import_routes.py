@@ -6,11 +6,12 @@ from fastapi import (
     File,
     UploadFile,
 )
+from fastapi.responses import StreamingResponse
 
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db
-from app.security.auth_dependency import get_current_user
+from app.security.role_dependency import require_company_admin
 
 from app.models.user import User
 
@@ -48,7 +49,7 @@ def upload_import(
     import_type: str,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company_admin),
 ):
     return import_service.upload_import(
         db=db,
@@ -70,7 +71,7 @@ def upload_import(
 def validate_import(
     request: ImportValidateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company_admin),
 ):
     return import_service.validate_import(
         db=db,
@@ -90,7 +91,7 @@ def validate_import(
 def process_import(
     request: ImportProcessRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company_admin),
 ):
     return import_service.process_import(
         db=db,
@@ -110,11 +111,42 @@ def process_import(
 )
 def get_import_history(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company_admin),
 ):
     return import_service.get_import_history(
         db=db,
         company_id=current_user.company_id,
+    )
+
+
+# ============================================================
+# Download Failed Records
+# ============================================================
+
+@router.get(
+    "/{import_id}/failed-records",
+)
+def download_failed_records(
+    import_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_company_admin),
+):
+    file_bytes, filename = (
+        import_service.download_failed_records(
+            db=db,
+            import_id=import_id,
+            company_id=current_user.company_id,
+        )
+    )
+
+    return StreamingResponse(
+        iter([file_bytes]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{filename}"'
+            )
+        },
     )
 
 
@@ -128,7 +160,7 @@ def get_import_history(
 def get_import_details(
     import_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_company_admin),
 ):
     return import_service.get_import_details(
         db=db,

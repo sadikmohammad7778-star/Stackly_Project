@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import re
 from datetime import datetime
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Any
 
 import pandas as pd
@@ -205,45 +205,21 @@ def read_import_file(
         filename
     )[1].lower()
 
-    if extension == ".csv":
-
-        try:
-            df = pd.read_csv(
-                BytesIO(file_bytes)
-            )
-
-        except Exception as exc:
-
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unable to read CSV file: {exc}",
-            )
-
-    elif extension in {
-        ".xlsx",
-        ".xls",
-    }:
-
-        try:
-            df = pd.read_excel(
-                BytesIO(file_bytes)
-            )
-
-        except Exception as exc:
-
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unable to read Excel file: {exc}",
-            )
-
-    else:
-
+    if extension != ".csv":
         raise HTTPException(
             status_code=400,
-            detail=(
-                "Unsupported file format. "
-                "Only CSV and Excel files are supported."
-            ),
+            detail="Unsupported file format. Only CSV files are supported.",
+        )
+
+    try:
+        df = pd.read_csv(
+            BytesIO(file_bytes)
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unable to read CSV file: {exc}",
         )
 
     if df.empty:
@@ -1244,12 +1220,34 @@ def process_product_import(
 
             failed += 1
 
+            error_message = str(exc)
+
+            if "customer_purchase_summary_customer_id_key" in error_message:
+                error_message = (
+                    "Customer purchase summary already exists."
+                )
+
+            elif "customer_id" in error_message and "UniqueViolation" in error_message:
+                error_message = (
+                    "Customer summary already exists for this customer."
+                )
+
+            elif "UniqueViolation" in error_message:
+                error_message = (
+                    "Duplicate record already exists."
+                )
+
+            else:
+                error_message = (
+                    "Unable to process customer record."
+                )
+
             add_import_error(
                 db=db,
                 import_id=import_id,
                 row_number=row_number,
                 error_type="PROCESSING",
-                error_message=str(exc),
+                error_message=error_message,
             )
 
     return (
@@ -1292,6 +1290,10 @@ def process_customer_import(
                     row_data.get("phone")
                 )
 
+                # ------------------------------------------------
+                # Check duplicate customer
+                # ------------------------------------------------
+
                 existing = (
                     db.query(Customer)
                     .filter(
@@ -1301,6 +1303,7 @@ def process_customer_import(
                             |
                             (Customer.phone == phone)
                         ),
+                        Customer.deleted_at.is_(None),
                     )
                     .first()
                 )
@@ -1310,11 +1313,19 @@ def process_customer_import(
                     duplicates += 1
                     continue
 
+                # ------------------------------------------------
+                # Customer Name
+                # ------------------------------------------------
+
                 first_name, last_name = (
                     split_customer_name(
                         row_data.get("name")
                     )
                 )
+
+                # ------------------------------------------------
+                # Create Customer
+                # ------------------------------------------------
 
                 customer = Customer(
                     company_id=company_id,
@@ -1349,27 +1360,55 @@ def process_customer_import(
                 db.add(customer)
                 db.flush()
 
-                summary = CustomerPurchaseSummary(
-                    customer_id=customer.id,
-                    total_orders=0,
-                    total_revenue=0,
-                    total_products_purchased=0,
-                    average_order_value=0,
-                    purchase_frequency=0,
-                    segment="New Customer",
+                # ------------------------------------------------
+                # Customer Purchase Summary
+                #
+                # IMPORTANT:
+                # Do not blindly INSERT a summary.
+                # A customer can already have one.
+                # ------------------------------------------------
+
+                summary = (
+                    db.query(
+                        CustomerPurchaseSummary
+                    )
+                    .filter(
+                        CustomerPurchaseSummary.customer_id
+                        == customer.id
+                    )
+                    .first()
                 )
+
+                if summary is None:
+
+                    summary = CustomerPurchaseSummary(
+                        customer_id=customer.id,
+                        total_orders=0,
+                        total_revenue=0,
+                        total_products_purchased=0,
+                        average_order_value=0,
+                        purchase_frequency=0,
+                        segment="New Customer",
+                    )
+
+                    db.add(summary)
+
+                # ------------------------------------------------
+                # Customer Timeline
+                # ------------------------------------------------
 
                 timeline = CustomerTimeline(
                     customer_id=customer.id,
                     event="Customer Imported",
                     description=(
                         f"Customer imported from "
-                        f"{row_data.get('name', '')}."
+                        f"{normalize_text(row_data.get('name'))}."
                     ),
                 )
 
-                db.add(summary)
                 db.add(timeline)
+
+                db.flush()
 
             successful += 1
 
@@ -1377,12 +1416,31 @@ def process_customer_import(
 
             failed += 1
 
+            # Never expose raw database/SQL errors.
+            error_message = str(exc)
+
+            if "customer_purchase_summary_customer_id_key" in error_message:
+                error_message = (
+                    "Customer purchase summary already exists."
+                )
+
+            elif "UniqueViolation" in error_message:
+                error_message = (
+                    "A customer with the same unique information "
+                    "already exists."
+                )
+
+            elif "duplicate key" in error_message.lower():
+                error_message = (
+                    "Duplicate customer record."
+                )
+
             add_import_error(
                 db=db,
                 import_id=import_id,
                 row_number=row_number,
                 error_type="PROCESSING",
-                error_message=str(exc),
+                error_message=error_message,
             )
 
     return (
@@ -2009,3 +2067,99 @@ def get_import_details(
             for error in errors
         ],
     }
+
+
+def download_failed_records(
+    db: Session,
+    import_id: int,
+    company_id: int,
+):
+    import_history = get_import(
+        db=db,
+        import_id=import_id,
+        company_id=company_id,
+    )
+
+    errors = (
+        db.query(ImportError)
+        .filter(
+            ImportError.import_id == import_id,
+            ImportError.error_type.in_(
+                ["VALIDATION", "PROCESSING"]
+            ),
+        )
+        .order_by(
+            ImportError.row_number.asc()
+        )
+        .all()
+    )
+
+    if not errors:
+        raise HTTPException(
+            status_code=404,
+            detail="No failed records found for this import.",
+        )
+
+    df = load_import_dataframe(
+        import_history
+    )
+
+    failed_rows = []
+
+    for error in errors:
+        dataframe_index = error.row_number - 2
+
+        if (
+            dataframe_index < 0
+            or dataframe_index >= len(df)
+        ):
+            continue
+
+        row = df.iloc[dataframe_index].to_dict()
+
+        row["row_number"] = error.row_number
+        row["error_type"] = error.error_type
+        row["error_message"] = error.error_message
+
+        failed_rows.append(row)
+
+    if not failed_rows:
+        raise HTTPException(
+            status_code=404,
+            detail="Failed record data could not be found.",
+        )
+
+    failed_df = pd.DataFrame(
+        failed_rows
+    )
+
+    columns = [
+        "row_number",
+        *list(df.columns),
+        "error_type",
+        "error_message",
+    ]
+
+    failed_df = failed_df[
+        [
+            column
+            for column in columns
+            if column in failed_df.columns
+        ]
+    ]
+
+    output = StringIO()
+
+    failed_df.to_csv(
+        output,
+        index=False,
+    )
+
+    filename = (
+        f"failed_records_{import_history.id}.csv"
+    )
+
+    return (
+        output.getvalue().encode("utf-8"),
+        filename,
+    )

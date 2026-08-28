@@ -1,0 +1,21 @@
+name,sku,category,price,stock,brand
+Final Laptop 01,FINAL001,Electronics,65000,20,Dell
+Final Monitor 02,FINAL002,Electronics,12000,15,Samsung
+Final Keyboard 03,FINAL003,Electronics,2500,30,HP
+Final TV 04,FINAL004,Electronics,45000,18,LG
+Final Tablet 05,FINAL005,Electronics,70000,10,Apple
+Final Mobile 06,FINAL006,Mobile,40000,20,Samsung
+Final iPhone 07,FINAL007,Mobile,65000,15,Apple
+Final Phone 08,FINAL008,Mobile,30000,25,OnePlus
+Final Charger 09,FINAL009,Mobile,1200,35,Samsung
+Final Cover 10,FINAL010,Mobile,500,50,Spigen
+Final Grocery 11,FINAL011,Groceries,2500,20,India Gate
+Final Rice 12,FINAL012,Groceries,1800,25,India Gate
+Final Oil 13,FINAL013,Groceries,1600,30,Fortune
+Final Food 14,FINAL014,Groceries,900,40,ITC
+Final Sugar 15,FINAL015,Groceries,600,35,Tata
+Final Laptop 16,FINAL016,Electronics,75000,12,HP
+Final Monitor 17,FINAL017,Electronics,22000,20,Dell
+Final Tablet 18,FINAL018,Electronics,55000,10,Samsung
+Final Powerbank 19,FINAL019,Mobile,2500,30,Mi
+Final Smartphone 20,FINAL020,Mobile,35000,20,OnePlus

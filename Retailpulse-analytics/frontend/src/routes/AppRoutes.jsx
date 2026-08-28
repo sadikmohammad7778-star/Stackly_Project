@@ -35,6 +35,7 @@ import Departments from "../pages/Departments";
 import Attendance from "../pages/Attendance";
 import DemandForecast from "../pages/DemandForecast";
 import InventoryForecast from "../pages/InventoryForecast";
+import DataImport from "../pages/DataImport";
 
 /* ================= Reports ================= */
 
@@ -120,6 +121,11 @@ export default function AppRoutes() {
             element={<Inventory />}
           />
 
+          <Route
+            path="/data-import"
+            element={<DataImport />}
+          />
+
           {/* Demand Forecast */}
 
           <Route
@@ -131,6 +137,8 @@ export default function AppRoutes() {
               path="/inventory/forecast"
               element={<InventoryForecast />}
           />
+
+
 
           {/* Customers */}
 

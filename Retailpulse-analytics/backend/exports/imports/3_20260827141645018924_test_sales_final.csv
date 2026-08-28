@@ -1,0 +1,6 @@
+invoice_number,customer_email,sku,quantity,sales_channel,payment_method
+INV-IMPORT-101,rahul.import@example.com,IMP001,1,Online,UPI
+INV-IMPORT-102,priya.import@example.com,IMP002,1,Store,Cash
+INV-IMPORT-103,anjali.import@example.com,IMP003,1,Online,Card
+INV-IMPORT-104,kiran.import@example.com,IMP005,1,Store,UPI
+INV-IMPORT-105,vikram.import@example.com,IMP010,1,Online,Card

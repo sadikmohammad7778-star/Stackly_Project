@@ -1,0 +1,21 @@
+name,sku,category,price,stock,brand
+Laptop,IMP001,Electronics,75000,10,Dell
+Assus Laptop,IMP002,Electronics,65000,20,Asus
+Television,IMP003,Electronics,25000,115,Samsung
+Tablet,IMP004,Electronics,70000,4,Samsung
+Test Laptop,IMP005,Electronics,50000,23,HP
+Mobile,IMP006,Mobile,40000,6,Samsung
+iPhone,IMP007,Mobile,65000,15,Apple
+Android Phone,IMP008,Mobile,30000,25,OnePlus
+Smart TV,IMP009,Electronics,45000,18,LG
+Bluetooth Speaker,IMP010,Electronics,5000,30,JBL
+Wireless Headphones,IMP011,Electronics,3500,22,Boat
+Laptop Bag,IMP012,Electronics,1800,40,HP
+Mobile Charger,IMP013,Mobile,1200,35,Samsung
+Mobile Cover,IMP014,Mobile,500,50,Spigen
+Refrigerator,IMP015,Electronics,55000,12,LG
+Washing Machine,IMP016,Electronics,42000,8,Samsung
+Microwave Oven,IMP017,Electronics,15000,14,IFB
+Grocery Pack,IMP018,Groceries,2500,20,India Gate
+Rice Bag,IMP019,Groceries,1800,25,India Gate
+Cooking Oil,IMP020,Groceries,1600,30,Fortune
