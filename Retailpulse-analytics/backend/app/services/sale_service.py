@@ -179,6 +179,8 @@ def create_sale(
     sale: SaleCreate,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     try:
 
@@ -527,8 +529,8 @@ def create_sale(
         )
 
         # ----------------------------------------------------
-        # Audit
-        # ----------------------------------------------------
+# Audit
+# ----------------------------------------------------
 
         create_audit_log(
             db=db,
@@ -536,10 +538,27 @@ def create_sale(
             user_id=user_id,
             module="Sales",
             action="CREATE",
+            resource_type="Sale",
+            resource_id=str(db_sale.id),
             description=(
                 f"Created Sale "
                 f"{db_sale.invoice_number}"
             ),
+            before_values=None,
+            after_values={
+                "invoice_number": db_sale.invoice_number,
+                "customer_id": db_sale.customer_id,
+                "customer_name": db_sale.customer_name,
+                "sales_channel": db_sale.sales_channel,
+                "payment_method": db_sale.payment_method,
+                "discount": float(db_sale.discount or 0),
+                "tax": float(db_sale.tax or 0),
+                "total_amount": float(db_sale.total_amount),
+                "status": db_sale.status,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
 
         # ----------------------------------------------------
@@ -720,6 +739,8 @@ def update_sale(
     sale: SaleUpdate,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
 
     # Get actual SQLAlchemy Sale object
@@ -728,6 +749,22 @@ def update_sale(
         sale_id=sale_id,
         company_id=company_id,
     )
+
+    # ----------------------------------------------------
+    # Capture Before Values
+    # ----------------------------------------------------
+
+    before_values = {
+        "customer_id": db_sale.customer_id,
+        "customer_name": db_sale.customer_name,
+        "sales_channel": db_sale.sales_channel,
+        "payment_method": db_sale.payment_method,
+        "discount": float(db_sale.discount or 0),
+        "tax": float(db_sale.tax or 0),
+        "total_amount": float(db_sale.total_amount),
+        "status": db_sale.status,
+    }
+
     update_data = sale.model_dump(
         exclude_unset=True
     )
@@ -781,14 +818,6 @@ def update_sale(
                 )
 
         # ----------------------------------------------------
-        # Commit
-        # ----------------------------------------------------
-
-        db.commit()
-
-        db.refresh(db_sale)
-
-        # ----------------------------------------------------
         # Audit Log
         # ----------------------------------------------------
 
@@ -798,11 +827,35 @@ def update_sale(
             user_id=user_id,
             module="Sales",
             action="UPDATE",
+            resource_type="Sale",
+            resource_id=str(db_sale.id),
             description=(
                 f"Updated Sale "
                 f"{db_sale.invoice_number}"
             ),
+            before_values=before_values,
+            after_values={
+                "customer_id": db_sale.customer_id,
+                "customer_name": db_sale.customer_name,
+                "sales_channel": db_sale.sales_channel,
+                "payment_method": db_sale.payment_method,
+                "discount": float(db_sale.discount or 0),
+                "tax": float(db_sale.tax or 0),
+                "total_amount": float(db_sale.total_amount),
+                "status": db_sale.status,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
+
+        # ----------------------------------------------------
+        # Commit
+        # ----------------------------------------------------
+
+        db.commit()
+
+        db.refresh(db_sale)
 
         return db_sale
 
@@ -829,8 +882,9 @@ def delete_sale(
     sale_id: int,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
-
     db_sale = get_sale_model_by_id(
         db=db,
         sale_id=sale_id,
@@ -942,6 +996,18 @@ def delete_sale(
         invoice_number = db_sale.invoice_number
         deleted_sale_id = db_sale.id
 
+        before_values = {
+            "invoice_number": db_sale.invoice_number,
+            "customer_id": db_sale.customer_id,
+            "customer_name": db_sale.customer_name,
+            "sales_channel": db_sale.sales_channel,
+            "payment_method": db_sale.payment_method,
+            "discount": float(db_sale.discount or 0),
+            "tax": float(db_sale.tax or 0),
+            "total_amount": float(db_sale.total_amount),
+            "status": db_sale.status,
+        }
+
         # ----------------------------------------------------
         # Audit Log
         # ----------------------------------------------------
@@ -952,10 +1018,17 @@ def delete_sale(
             user_id=user_id,
             module="Sales",
             action="DELETE",
+            resource_type="Sale",
+            resource_id=str(deleted_sale_id),
             description=(
                 f"Deleted Sale "
                 f"{invoice_number}"
             ),
+            before_values=before_values,
+            after_values=None,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
 
         # ----------------------------------------------------

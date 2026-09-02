@@ -1,6 +1,7 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db, get_current_user
@@ -24,14 +25,21 @@ router = APIRouter(
 @router.post("/", response_model=CategoryResponse)
 def create_category(
     category: CategoryCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return category_service.create_category(
-        db,
-        category,
-        current_user.id,
-        current_user.company_id,
+        db=db,
+        category=category,
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
@@ -63,27 +71,41 @@ def get_category(
 def update_category(
     category_id: int,
     category: CategoryUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return category_service.update_category(
-        db,
-        category_id,
-        category,
-        current_user.id,
-        current_user.company_id,
+        db=db,
+        category_id=category_id,
+        category=category,
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
 @router.delete("/{category_id}")
 def delete_category(
     category_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return category_service.delete_category(
-        db,
-        category_id,
-        current_user.id,
-        current_user.company_id,
+        db=db,
+        category_id=category_id,
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )

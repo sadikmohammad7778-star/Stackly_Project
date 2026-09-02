@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from fastapi.responses import FileResponse
 
@@ -37,13 +37,11 @@ router = APIRouter(
     tags=["Customers"],
 )
 
-# =====================================================
-# CREATE
-# =====================================================
 
 @router.post("/", response_model=CustomerResponse)
 def add_customer(
     customer: CustomerCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -53,15 +51,15 @@ def add_customer(
             customer=customer,
             company_id=current_user.company_id,
             user_id=current_user.id,
+            ip_address=request.client.host if request.client else None,
+            user_agent=request.headers.get("user-agent"),
         )
     except ValueError as e:
         raise HTTPException(
             status_code=409,
             detail=str(e),
         )
-# =====================================================
-# LIST
-# =====================================================
+
 
 @router.get("/", response_model=list[CustomerResponse])
 def get_customers(
@@ -73,9 +71,6 @@ def get_customers(
         company_id=current_user.company_id,
     )
 
-# =====================================================
-# SEARCH & FILTER (STATIC ROUTES FIRST)
-# =====================================================
 
 @router.get("/search/")
 def search_customer(
@@ -83,8 +78,6 @@ def search_customer(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
-    
     return search_customers(
         db=db,
         search=search,
@@ -112,9 +105,6 @@ def filter_customer_data(
         country=country,
     )
 
-# =====================================================
-# DASHBOARD & ANALYTICS
-# =====================================================
 
 @router.get("/dashboard")
 def customer_dashboard(
@@ -159,6 +149,7 @@ def growth(
         company_id=current_user.company_id,
     )
 
+
 @router.get("/distribution")
 def distribution(
     db: Session = Depends(get_db),
@@ -169,10 +160,6 @@ def distribution(
         company_id=current_user.company_id,
     )
 
-
-# =====================================================
-# EXPORT
-# =====================================================
 
 @router.get("/export/csv")
 def export_customer_csv(
@@ -208,10 +195,6 @@ def export_customer_pdf(
     )
 
 
-# =====================================================
-# DYNAMIC ROUTES (KEEP THESE LAST)
-# =====================================================
-
 @router.get(
     "/{customer_id}",
     response_model=CustomerProfileResponse,
@@ -228,7 +211,10 @@ def get_customer(
             company_id=current_user.company_id,
         )
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
 
 
 @router.put(
@@ -238,6 +224,7 @@ def get_customer(
 def edit_customer(
     customer_id: int,
     customer: CustomerUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -248,6 +235,12 @@ def edit_customer(
             customer=customer,
             company_id=current_user.company_id,
             user_id=current_user.id,
+            ip_address=(
+                request.client.host
+                if request.client
+                else None
+            ),
+            user_agent=request.headers.get("user-agent"),
         )
 
     except ValueError as e:
@@ -256,9 +249,11 @@ def edit_customer(
             detail=str(e),
         )
 
+
 @router.delete("/{customer_id}")
 def remove_customer(
     customer_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -268,9 +263,19 @@ def remove_customer(
             customer_id=customer_id,
             company_id=current_user.company_id,
             user_id=current_user.id,
+            ip_address=(
+                request.client.host
+                if request.client
+                else None
+            ),
+            user_agent=request.headers.get("user-agent"),
         )
+
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
 
 
 @router.patch(
@@ -280,10 +285,10 @@ def remove_customer(
 def update_status(
     customer_id: int,
     status: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-
     if status not in ["Active", "Inactive"]:
         raise HTTPException(
             status_code=400,
@@ -297,12 +302,20 @@ def update_status(
             status=status,
             company_id=current_user.company_id,
             user_id=current_user.id,
+            ip_address=(
+                request.client.host
+                if request.client
+                else None
+            ),
+            user_agent=request.headers.get("user-agent"),
         )
+
     except ValueError as e:
         raise HTTPException(
             status_code=404,
             detail=str(e),
         )
+
 
 @router.get("/{customer_id}/purchase-history")
 def customer_purchase_history(
@@ -311,9 +324,9 @@ def customer_purchase_history(
     current_user: User = Depends(get_current_user),
 ):
     return get_customer_purchase_history(
-       db=db,
-       customer_id=customer_id,
-       company_id=current_user.company_id,
+        db=db,
+        customer_id=customer_id,
+        company_id=current_user.company_id,
     )
 
 

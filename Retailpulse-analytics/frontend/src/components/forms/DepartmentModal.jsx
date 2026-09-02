@@ -1,14 +1,17 @@
-import { useState } from "react";
-import { createDepartment } from "../../api/departmentApi";
+import { useEffect, useState } from "react";
+import {
+  createDepartment,
+  updateDepartment,
+} from "../../api/departmentApi";
 import "./DepartmentModal.css";
 
 export default function DepartmentModal({
   isOpen,
+  department,
   onClose,
   onSuccess,
 }) {
   const initialForm = {
-
     company_id: "",
     department_name: "",
     description: "",
@@ -16,6 +19,20 @@ export default function DepartmentModal({
 
   const [formData, setFormData] = useState(initialForm);
   const [loading, setLoading] = useState(false);
+
+  const isEditMode = Boolean(department);
+
+  useEffect(() => {
+    if (department) {
+      setFormData({
+        company_id: department.company_id || "",
+        department_name: department.department_name || "",
+        description: department.description || "",
+      });
+    } else {
+      setFormData(initialForm);
+    }
+  }, [department, isOpen]);
 
   if (!isOpen) return null;
 
@@ -38,22 +55,42 @@ export default function DepartmentModal({
     setLoading(true);
 
     try {
-      await createDepartment(formData);
+      if (isEditMode) {
+        const departmentData = {
+          company_id: Number(formData.company_id),
+          department_name: formData.department_name,
+          description: formData.description,
+        };
 
-      alert("Department created successfully.");
+        await updateDepartment(
+          department.id,
+          departmentData
+        );
+
+        alert("Department updated successfully.");
+      } else {
+        const departmentData = {
+          company_id: Number(formData.company_id),
+          department_name: formData.department_name,
+          description: formData.description,
+        };
+
+        await createDepartment(departmentData);
+
+        alert("Department created successfully.");
+      }
 
       resetForm();
-
-      onSuccess();
-
+      await onSuccess();
       onClose();
-
     } catch (error) {
       console.error(error);
 
       alert(
         error.response?.data?.detail ||
-        "Failed to create department."
+        `Failed to ${
+          isEditMode ? "update" : "create"
+        } department.`
       );
     } finally {
       setLoading(false);
@@ -62,13 +99,14 @@ export default function DepartmentModal({
 
   return (
     <div className="modal-overlay">
-
       <div className="modal">
-
-        <h2>Add Department</h2>
+        <h2>
+          {isEditMode
+            ? "Edit Department"
+            : "Add Department"}
+        </h2>
 
         <form onSubmit={handleSubmit}>
-
           <input
             type="text"
             name="department_name"
@@ -96,7 +134,6 @@ export default function DepartmentModal({
           />
 
           <div className="modal-buttons">
-
             <button
               type="button"
               onClick={onClose}
@@ -109,15 +146,15 @@ export default function DepartmentModal({
               type="submit"
               disabled={loading}
             >
-              {loading ? "Saving..." : "Save Department"}
+              {loading
+                ? "Saving..."
+                : isEditMode
+                ? "Update Department"
+                : "Save Department"}
             </button>
-
           </div>
-
         </form>
-
       </div>
-
     </div>
   );
 }

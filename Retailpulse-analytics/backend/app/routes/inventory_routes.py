@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
+
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db, get_current_user
+
 from app.models.user import User
 
 from app.services.inventory_service import InventoryService
+
 from app.schemas.inventory_schema import (
     AddStockRequest,
     RemoveStockRequest,
@@ -43,6 +46,7 @@ def get_inventory(
 @router.post("/add-stock")
 def add_stock(
     data: AddStockRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -51,12 +55,19 @@ def add_stock(
         data,
         current_user.id,
         current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
 @router.post("/remove-stock")
 def remove_stock(
     data: RemoveStockRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -65,12 +76,19 @@ def remove_stock(
         data,
         current_user.id,
         current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
 @router.post("/adjust-stock")
 def adjust_stock(
     data: AdjustStockRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -79,6 +97,12 @@ def adjust_stock(
         data,
         current_user.id,
         current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 

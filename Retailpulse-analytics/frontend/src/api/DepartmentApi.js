@@ -16,7 +16,11 @@ export const createDepartment = async (department) => {
 };
 
 export const updateDepartment = async (id, department) => {
-  const response = await axiosInstance.put(`/departments/${id}`, department);
+  const response = await axiosInstance.put(
+    `/departments/${id}`,
+    department
+  );
+
   return response.data;
 };
 

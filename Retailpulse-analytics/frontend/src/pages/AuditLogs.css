@@ -133,25 +133,32 @@
 =========================== */
 
 .badge {
-  padding: 6px 14px;
-  border-radius: 30px;
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  min-width: 80px;
+  border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: visible;
 }
 
-.create {
+.badge.create {
   background: #16a34a;
+  color: white;
 }
 
-.update {
+.badge.update {
   background: #2563eb;
+  color: white;
 }
 
-.delete {
+.badge.delete {
   background: #dc2626;
+  color: white;
 }
-
 /* ===========================
    Pagination
 =========================== */

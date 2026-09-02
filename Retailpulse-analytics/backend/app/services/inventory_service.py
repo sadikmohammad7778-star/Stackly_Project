@@ -108,6 +108,8 @@ class InventoryService:
         data: AddStockRequest,
         user_id: int,
         company_id: int,
+        ip_address: str = None,
+        user_agent: str = None,
     ):
         product = (
             db.query(Product)
@@ -121,7 +123,7 @@ class InventoryService:
         if not product:
             raise HTTPException(
                 status_code=404,
-                detail="Product not found"
+                detail="Product not found",
             )
 
         inventory = (
@@ -149,6 +151,16 @@ class InventoryService:
 
         previous_quantity = inventory.current_stock
 
+        before_values = {
+            "product_id": product.id,
+            "product_name": product.name,
+            "current_stock": inventory.current_stock,
+            "available_stock": inventory.available_stock,
+            "reserved_stock": inventory.reserved_stock,
+            "reorder_level": inventory.reorder_level,
+            "stock_status": inventory.stock_status,
+        }
+
         inventory.current_stock += data.quantity
 
         inventory.available_stock = (
@@ -174,25 +186,41 @@ class InventoryService:
 
         db.add(movement)
 
-        db.commit()
-        db.refresh(inventory)
-
         create_audit_log(
             db=db,
             company_id=company_id,
             user_id=user_id,
             module="Inventory",
             action="STOCK_IN",
+            resource_type="Inventory",
+            resource_id=str(inventory.id),
             description=(
                 f"Added {data.quantity} units "
                 f"to '{product.name}'"
             ),
+            before_values=before_values,
+            after_values={
+                "product_id": product.id,
+                "product_name": product.name,
+                "current_stock": inventory.current_stock,
+                "available_stock": inventory.available_stock,
+                "reserved_stock": inventory.reserved_stock,
+                "reorder_level": inventory.reorder_level,
+                "stock_status": inventory.stock_status,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
+
+        db.commit()
+        db.refresh(inventory)
 
         return {
             "message": "Stock added successfully",
             "inventory": inventory,
         }
+
 
     @staticmethod
     def remove_stock(
@@ -200,6 +228,8 @@ class InventoryService:
         data: RemoveStockRequest,
         user_id: int,
         company_id: int,
+        ip_address: str = None,
+        user_agent: str = None,
     ):
         product = (
             db.query(Product)
@@ -213,7 +243,7 @@ class InventoryService:
         if not product:
             raise HTTPException(
                 status_code=404,
-                detail="Product not found"
+                detail="Product not found",
             )
 
         inventory = (
@@ -228,16 +258,26 @@ class InventoryService:
         if not inventory:
             raise HTTPException(
                 status_code=404,
-                detail="Inventory not found"
+                detail="Inventory not found",
             )
 
         if data.quantity > inventory.available_stock:
             raise HTTPException(
                 status_code=400,
-                detail="Insufficient available stock"
+                detail="Insufficient available stock",
             )
 
         previous_quantity = inventory.current_stock
+
+        before_values = {
+            "product_id": product.id,
+            "product_name": product.name,
+            "current_stock": inventory.current_stock,
+            "available_stock": inventory.available_stock,
+            "reserved_stock": inventory.reserved_stock,
+            "reorder_level": inventory.reorder_level,
+            "stock_status": inventory.stock_status,
+        }
 
         inventory.current_stock -= data.quantity
 
@@ -264,25 +304,40 @@ class InventoryService:
 
         db.add(movement)
 
-        db.commit()
-        db.refresh(inventory)
-
         create_audit_log(
             db=db,
             company_id=company_id,
             user_id=user_id,
             module="Inventory",
             action="STOCK_OUT",
+            resource_type="Inventory",
+            resource_id=str(inventory.id),
             description=(
                 f"Removed {data.quantity} units "
                 f"from '{product.name}'"
             ),
+            before_values=before_values,
+            after_values={
+                "product_id": product.id,
+                "product_name": product.name,
+                "current_stock": inventory.current_stock,
+                "available_stock": inventory.available_stock,
+                "reserved_stock": inventory.reserved_stock,
+                "reorder_level": inventory.reorder_level,
+                "stock_status": inventory.stock_status,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
+        db.commit()
+        db.refresh(inventory)
 
         return {
             "message": "Stock removed successfully",
             "inventory": inventory,
         }
+
 
     @staticmethod
     def adjust_stock(
@@ -290,6 +345,8 @@ class InventoryService:
         data: AdjustStockRequest,
         user_id: int,
         company_id: int,
+        ip_address: str = None,
+        user_agent: str = None,
     ):
         product = (
             db.query(Product)
@@ -303,7 +360,7 @@ class InventoryService:
         if not product:
             raise HTTPException(
                 status_code=404,
-                detail="Product not found"
+                detail="Product not found",
             )
 
         inventory = (
@@ -318,16 +375,26 @@ class InventoryService:
         if not inventory:
             raise HTTPException(
                 status_code=404,
-                detail="Inventory not found"
+                detail="Inventory not found",
             )
 
         if data.quantity < 0:
             raise HTTPException(
                 status_code=400,
-                detail="Stock cannot be negative"
+                detail="Stock cannot be negative",
             )
 
         previous_quantity = inventory.current_stock
+
+        before_values = {
+            "product_id": product.id,
+            "product_name": product.name,
+            "current_stock": inventory.current_stock,
+            "available_stock": inventory.available_stock,
+            "reserved_stock": inventory.reserved_stock,
+            "reorder_level": inventory.reorder_level,
+            "stock_status": inventory.stock_status,
+        }
 
         inventory.current_stock = data.quantity
 
@@ -354,21 +421,35 @@ class InventoryService:
 
         db.add(movement)
 
-        db.commit()
-        db.refresh(inventory)
-
         create_audit_log(
             db=db,
             company_id=company_id,
             user_id=user_id,
             module="Inventory",
             action="ADJUST",
+            resource_type="Inventory",
+            resource_id=str(inventory.id),
             description=(
                 f"Adjusted stock of '{product.name}' "
                 f"from {previous_quantity} "
                 f"to {inventory.current_stock}"
             ),
+            before_values=before_values,
+            after_values={
+                "product_id": product.id,
+                "product_name": product.name,
+                "current_stock": inventory.current_stock,
+                "available_stock": inventory.available_stock,
+                "reserved_stock": inventory.reserved_stock,
+                "reorder_level": inventory.reorder_level,
+                "stock_status": inventory.stock_status,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
+        db.commit()
+        db.refresh(inventory)
 
         return {
             "message": "Stock adjusted successfully",

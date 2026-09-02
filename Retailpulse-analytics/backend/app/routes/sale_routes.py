@@ -1,7 +1,7 @@
 from typing import List
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -45,6 +45,7 @@ router = APIRouter(
 )
 def create_sale(
     sale: SaleCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -53,8 +54,13 @@ def create_sale(
         sale=sale,
         user_id=current_user.id,
         company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
-
 # ============================================================
 # Sales Dashboard Summary
 # ============================================================
@@ -212,6 +218,7 @@ def get_sale(
 def update_sale(
     sale_id: int,
     sale: SaleUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -221,8 +228,13 @@ def update_sale(
         sale=sale,
         user_id=current_user.id,
         company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
-
 # ============================================================
 # Delete Sale
 # ============================================================
@@ -232,6 +244,7 @@ def update_sale(
 )
 def delete_sale(
     sale_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -240,4 +253,10 @@ def delete_sale(
         sale_id=sale_id,
         user_id=current_user.id,
         company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )

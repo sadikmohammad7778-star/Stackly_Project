@@ -6,8 +6,8 @@ import {
 } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
+import AdminRoute from "./AdminRoute";
 import DashboardLayout from "../layouts/DashboardLayout";
-
 /* ================= Authentication ================= */
 
 import Login from "../pages/Login";
@@ -200,7 +200,11 @@ export default function AppRoutes() {
 
           <Route
             path="/audit"
-            element={<AuditLogs />}
+            element={
+              <AdminRoute>
+                <AuditLogs />
+              </AdminRoute>
+            }
           />
 
           {/* Settings */}

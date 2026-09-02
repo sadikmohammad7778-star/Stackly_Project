@@ -48,8 +48,9 @@ def create_customer(
     customer: CustomerCreate,
     company_id: int,
     user_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
-
     existing_email = (
         db.query(Customer)
         .filter(
@@ -93,8 +94,7 @@ def create_customer(
     )
 
     db.add(new_customer)
-    db.commit()
-    db.refresh(new_customer)
+    db.flush()
 
     summary = CustomerPurchaseSummary(
         customer_id=new_customer.id,
@@ -114,25 +114,51 @@ def create_customer(
     db.add(summary)
     db.add(timeline)
 
-    db.commit()
-
     create_audit_log(
         db=db,
         company_id=company_id,
         user_id=user_id,
         module="Customers",
         action="CREATE",
-        description=f"Customer '{new_customer.first_name} {new_customer.last_name}' created.",
+        resource_type="Customer",
+        resource_id=str(new_customer.id),
+        description=(
+            f"Customer '{new_customer.first_name} "
+            f"{new_customer.last_name}' created."
+        ),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        after_values={
+            "customer_id": new_customer.customer_id,
+            "first_name": new_customer.first_name,
+            "last_name": new_customer.last_name,
+            "email": new_customer.email,
+            "phone": new_customer.phone,
+            "address": new_customer.address,
+            "city": new_customer.city,
+            "state": new_customer.state,
+            "country": new_customer.country,
+            "postal_code": new_customer.postal_code,
+            "segment": new_customer.segment,
+            "status": new_customer.status,
+        },
+        status="SUCCESS",
     )
+
     create_notification(
         db=db,
         title="New Customer",
-        message=f"{new_customer.first_name} {new_customer.last_name} has been registered successfully.",
+        message=(
+            f"{new_customer.first_name} "
+            f"{new_customer.last_name} has been registered successfully."
+        ),
         type="success",
     )
 
-    return new_customer
+    db.commit()
+    db.refresh(new_customer)
 
+    return new_customer
 
 def get_all_customers(
     db: Session,
@@ -274,6 +300,9 @@ def get_customer_model_by_id(
 
     return customer
 
+# ============================================================
+# UPDATE CUSTOMER
+# ============================================================
 
 def update_customer(
     db: Session,
@@ -281,14 +310,19 @@ def update_customer(
     customer: CustomerUpdate,
     company_id: int,
     user_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     existing_customer = get_customer_model_by_id(
-        db,
-        customer_id,
-        company_id,
+        db=db,
+        customer_id=customer_id,
+        company_id=company_id,
     )
 
+    # --------------------------------------------------------
     # Check duplicate email
+    # --------------------------------------------------------
+
     if customer.email:
         email_exists = (
             db.query(Customer)
@@ -301,9 +335,14 @@ def update_customer(
         )
 
         if email_exists:
-            raise ValueError("Email already exists.")
+            raise ValueError(
+                "Email already exists."
+            )
 
+    # --------------------------------------------------------
     # Check duplicate phone
+    # --------------------------------------------------------
+
     if customer.phone:
         phone_exists = (
             db.query(Customer)
@@ -316,46 +355,116 @@ def update_customer(
         )
 
         if phone_exists:
-            raise ValueError("Phone number already exists.")
+            raise ValueError(
+                "Phone number already exists."
+            )
 
-    # Update fields
+    # --------------------------------------------------------
+    # Capture BEFORE values
+    # --------------------------------------------------------
+
+    before_values = {
+        "customer_id": existing_customer.customer_id,
+        "first_name": existing_customer.first_name,
+        "last_name": existing_customer.last_name,
+        "email": existing_customer.email,
+        "phone": existing_customer.phone,
+        "address": existing_customer.address,
+        "city": existing_customer.city,
+        "state": existing_customer.state,
+        "country": existing_customer.country,
+        "postal_code": existing_customer.postal_code,
+        "segment": existing_customer.segment,
+        "status": existing_customer.status,
+    }
+
+    # --------------------------------------------------------
+    # Update customer
+    # --------------------------------------------------------
+
     update_data = customer.model_dump(
         exclude_unset=True
     )
 
+    # Prevent company/user controlled fields
+    update_data.pop("company_id", None)
+    update_data.pop("created_by", None)
+    update_data.pop("user_id", None)
+
     for key, value in update_data.items():
-        setattr(existing_customer, key, value)
+        setattr(
+            existing_customer,
+            key,
+            value,
+        )
 
-    db.commit()
-    db.refresh(existing_customer)
+    # --------------------------------------------------------
+    # Capture AFTER values
+    # --------------------------------------------------------
 
-    # Audit Log
+    after_values = {
+        "customer_id": existing_customer.customer_id,
+        "first_name": existing_customer.first_name,
+        "last_name": existing_customer.last_name,
+        "email": existing_customer.email,
+        "phone": existing_customer.phone,
+        "address": existing_customer.address,
+        "city": existing_customer.city,
+        "state": existing_customer.state,
+        "country": existing_customer.country,
+        "postal_code": existing_customer.postal_code,
+        "segment": existing_customer.segment,
+        "status": existing_customer.status,
+    }
+
+    # --------------------------------------------------------
+    # Create Audit Log
+    # --------------------------------------------------------
+
     create_audit_log(
         db=db,
         company_id=company_id,
         user_id=user_id,
         module="Customers",
         action="UPDATE",
-        description=(
-            f"Customer '{existing_customer.first_name} "
-            f"{existing_customer.last_name}' updated."
+        resource_type="Customer",
+        resource_id=str(
+            existing_customer.id
         ),
+        description=(
+            f"Customer "
+            f"'{existing_customer.first_name} "
+            f"{existing_customer.last_name}' "
+            f"updated."
+        ),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        before_values=before_values,
+        after_values=after_values,
+        status="SUCCESS",
     )
 
+    # --------------------------------------------------------
+    # Commit
+    # --------------------------------------------------------
+
+    db.commit()
+
+    db.refresh(existing_customer)
+
     return existing_customer
-
-
 def delete_customer(
     db: Session,
     customer_id: int,
     company_id: int,
     user_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
-
     customer = get_customer_model_by_id(
-        db,
-        customer_id,
-        company_id,
+        db=db,
+        customer_id=customer_id,
+        company_id=company_id,
     )
 
     customer_name = (
@@ -363,10 +472,54 @@ def delete_customer(
         f"{customer.last_name}"
     )
 
+    # --------------------------------------------------------
+    # Capture BEFORE values
+    # --------------------------------------------------------
+
+    before_values = {
+        "customer_id": customer.customer_id,
+        "first_name": customer.first_name,
+        "last_name": customer.last_name,
+        "email": customer.email,
+        "phone": customer.phone,
+        "address": customer.address,
+        "city": customer.city,
+        "state": customer.state,
+        "country": customer.country,
+        "postal_code": customer.postal_code,
+        "segment": customer.segment,
+        "status": customer.status,
+    }
+
+    # --------------------------------------------------------
     # Soft Delete
+    # --------------------------------------------------------
+
     customer.deleted_at = datetime.utcnow()
 
-    db.commit()
+    # --------------------------------------------------------
+    # Capture AFTER values
+    # --------------------------------------------------------
+
+    after_values = {
+        "customer_id": customer.customer_id,
+        "first_name": customer.first_name,
+        "last_name": customer.last_name,
+        "email": customer.email,
+        "phone": customer.phone,
+        "address": customer.address,
+        "city": customer.city,
+        "state": customer.state,
+        "country": customer.country,
+        "postal_code": customer.postal_code,
+        "segment": customer.segment,
+        "status": customer.status,
+        "deleted_at": customer.deleted_at.isoformat(),
+    }
+
+    # --------------------------------------------------------
+    # Create Audit Log
+    # --------------------------------------------------------
 
     create_audit_log(
         db=db,
@@ -374,36 +527,45 @@ def delete_customer(
         user_id=user_id,
         module="Customers",
         action="DELETE",
+        resource_type="Customer",
+        resource_id=str(customer.id),
         description=(
             f"Customer '{customer_name}' deleted."
         ),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        before_values=before_values,
+        after_values=after_values,
+        status="SUCCESS",
     )
+
+    # --------------------------------------------------------
+    # Commit
+    # --------------------------------------------------------
+
+    db.commit()
 
     return {
         "message": "Customer deleted successfully."
     }
-
 def change_customer_status(
     db: Session,
     customer_id: int,
     status: str,
     company_id: int,
     user_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
-
     customer = get_customer_by_id(
-        db,
-        customer_id,
-        company_id,
+        db=db,
+        customer_id=customer_id,
+        company_id=company_id,
     )
 
+    old_status = customer.status
+
     customer.status = status
-
-    db.commit()
-
-    db.refresh(customer)
-
-    customer_name = f"{customer.first_name} {customer.last_name}"
 
     create_audit_log(
         db=db,
@@ -411,24 +573,49 @@ def change_customer_status(
         user_id=user_id,
         module="Customers",
         action="STATUS CHANGE",
-        description=f"Customer '{customer_name}' status changed to {status}.",
+        resource_type="Customer",
+        resource_id=str(customer.id),
+        description=(
+            f"Customer '{customer.first_name} "
+            f"{customer.last_name}' status changed "
+            f"from {old_status} to {status}."
+        ),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        before_values={
+            "status": old_status,
+        },
+        after_values={
+            "status": status,
+        },
+        status="SUCCESS",
+    )
+
+    db.commit()
+    db.refresh(customer)
+
+    customer_name = (
+        f"{customer.first_name} "
+        f"{customer.last_name}"
     )
 
     if status == "Inactive":
-
         create_notification(
             db=db,
             title="Customer Deactivated",
-            message=f"{customer_name} has been deactivated.",
+            message=(
+                f"{customer_name} has been deactivated."
+            ),
             type="warning",
         )
 
     elif status == "Active":
-
         create_notification(
             db=db,
             title="Customer Activated",
-            message=f"{customer_name} has been activated.",
+            message=(
+                f"{customer_name} has been activated."
+            ),
             type="success",
         )
 

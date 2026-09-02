@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.config.dependency import (
@@ -34,9 +34,19 @@ router = APIRouter(
 )
 def register(
     user: UserCreate,
+    request: Request,
     db: Session = Depends(get_db),
 ):
-    return register_user(db, user)
+    return register_user(
+        db=db,
+        user=user,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
+    )
 
 
 @router.post(
@@ -45,12 +55,19 @@ def register(
 )
 def login(
     user: UserLogin,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     return login_user(
-        db,
-        user.email,
-        user.password,
+        db=db,
+        email=user.email,
+        password=user.password,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
@@ -74,12 +91,20 @@ def refresh_token(
 )
 def logout(
     request: RefreshTokenRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
 ):
     return logout_user(
-        db,
-        request.refresh_token,
+        db=db,
+        refresh_token=request.refresh_token,
+        ip_address=(
+            http_request.client.host
+            if http_request.client
+            else None
+        ),
+        user_agent=http_request.headers.get("user-agent"),
     )
+
 
 @router.get(
     "/me",

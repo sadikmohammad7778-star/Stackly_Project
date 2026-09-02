@@ -14,6 +14,8 @@ def create_product(
     product: ProductCreate,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     try:
         category = (
@@ -98,11 +100,27 @@ def create_product(
             user_id=user_id,
             module="Product",
             action="CREATE",
+            resource_type="Product",
+            resource_id=str(db_product.id),
             description=(
                 f"Created product "
                 f"'{db_product.name}' "
                 f"(SKU: {db_product.sku})"
             ),
+            after_values={
+                "name": db_product.name,
+                "sku": db_product.sku,
+                "category_id": db_product.category_id,
+                "description": db_product.description,
+                "brand": db_product.brand,
+                "unit_price": db_product.unit_price,
+                "stock_quantity": db_product.stock_quantity,
+                "status": db_product.status,
+                "is_active": db_product.is_active,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
 
         db.commit()
@@ -169,6 +187,8 @@ def update_product(
     product: ProductUpdate,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     db_product = (
         db.query(Product)
@@ -184,6 +204,18 @@ def update_product(
             status_code=404,
             detail="Product not found."
         )
+
+    before_values = {
+        "name": db_product.name,
+        "sku": db_product.sku,
+        "category_id": db_product.category_id,
+        "description": db_product.description,
+        "brand": db_product.brand,
+        "unit_price": float(db_product.unit_price),
+        "stock_quantity": db_product.stock_quantity,
+        "status": db_product.status,
+        "is_active": db_product.is_active,
+    }
 
     try:
         update_data = product.model_dump(
@@ -267,13 +299,32 @@ def update_product(
             db_product.stock_quantity = inventory.current_stock
             db_product.status = inventory.stock_status
 
+        after_values = {
+            "name": db_product.name,
+            "sku": db_product.sku,
+            "category_id": db_product.category_id,
+            "description": db_product.description,
+            "brand": db_product.brand,
+            "unit_price": float(db_product.unit_price),
+            "stock_quantity": db_product.stock_quantity,
+            "status": db_product.status,
+            "is_active": db_product.is_active,
+        }
+
         create_audit_log(
             db=db,
             company_id=company_id,
             user_id=user_id,
             module="Product",
             action="UPDATE",
+            resource_type="Product",
+            resource_id=str(db_product.id),
             description=f"Updated product '{db_product.name}'",
+            before_values=before_values,
+            after_values=after_values,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
         )
 
         db.commit()
@@ -298,6 +349,8 @@ def delete_product(
     product_id: int,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     db_product = (
         db.query(Product)
@@ -315,9 +368,21 @@ def delete_product(
         )
 
     product_name = db_product.name
+    product_id_value = db_product.id
+
+    before_values = {
+        "name": db_product.name,
+        "sku": db_product.sku,
+        "category_id": db_product.category_id,
+        "description": db_product.description,
+        "brand": db_product.brand,
+        "unit_price": db_product.unit_price,
+        "stock_quantity": db_product.stock_quantity,
+        "status": db_product.status,
+        "is_active": db_product.is_active,
+    }
 
     db.delete(db_product)
-    db.commit()
 
     create_audit_log(
         db=db,
@@ -325,8 +390,17 @@ def delete_product(
         user_id=user_id,
         module="Product",
         action="DELETE",
+        resource_type="Product",
+        resource_id=str(product_id_value),
         description=f"Deleted product '{product_name}'",
+        before_values=before_values,
+        after_values=None,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        status="SUCCESS",
     )
+
+    db.commit()
 
     return {
         "message": "Product deleted successfully."

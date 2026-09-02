@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query,Request
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db, get_current_user
@@ -24,6 +24,7 @@ router = APIRouter(
 @router.post("/", response_model=ProductResponse)
 def create_product(
     product: ProductCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -32,8 +33,13 @@ def create_product(
         product,
         current_user.id,
         current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
-
 
 @router.get("/", response_model=List[ProductResponse])
 def get_products(
@@ -65,6 +71,7 @@ def get_product(
 def update_product(
     product_id: int,
     product: ProductUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -74,12 +81,19 @@ def update_product(
         product,
         current_user.id,
         current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
 @router.delete("/{product_id}")
 def delete_product(
     product_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -88,6 +102,12 @@ def delete_product(
         product_id,
         current_user.id,
         current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 

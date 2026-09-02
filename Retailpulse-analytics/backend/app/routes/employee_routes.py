@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
+
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db, get_current_user
@@ -27,14 +28,21 @@ router = APIRouter(
 @router.post("/", response_model=EmployeeResponse)
 def create(
     employee: EmployeeCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return create_employee(
-        db,
-        employee,
-        current_user.id,
-        current_user.company_id,
+        db=db,
+        employee=employee,
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
@@ -72,27 +80,41 @@ def get_by_id(
 def update(
     employee_id: int,
     employee: EmployeeUpdate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return update_employee(
-        db,
-        employee_id,
-        employee,
-        current_user.id,
-        current_user.company_id,
+        db=db,
+        employee_id=employee_id,
+        employee=employee,
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )
 
 
 @router.delete("/{employee_id}")
 def delete(
     employee_id: int,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return delete_employee(
-        db,
-        employee_id,
-        current_user.id,
-        current_user.company_id,
+        db=db,
+        employee_id=employee_id,
+        user_id=current_user.id,
+        company_id=current_user.company_id,
+        ip_address=(
+            request.client.host
+            if request.client
+            else None
+        ),
+        user_agent=request.headers.get("user-agent"),
     )

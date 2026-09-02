@@ -8,14 +8,13 @@ from app.schemas.employee_schema import EmployeeCreate, EmployeeUpdate
 from app.services.audit_service import create_audit_log
 
 
-# ---------------------------------
-# Create Employee
-# ---------------------------------
 def create_employee(
     db: Session,
     employee: EmployeeCreate,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     company = (
         db.query(Company)
@@ -45,43 +44,64 @@ def create_employee(
         )
 
     employee_data = employee.model_dump()
-
-    # Do not trust company_id from frontend
     employee_data["company_id"] = company_id
 
-    # Temporary code to satisfy NOT NULL / unique constraint
     new_employee = Employee(
         **employee_data,
         employee_code="TEMP",
     )
 
-    db.add(new_employee)
-    db.flush()
+    try:
+        db.add(new_employee)
+        db.flush()
 
-    # Automatic employee code
-    new_employee.employee_code = f"EMP{new_employee.id:03d}"
+        new_employee.employee_code = f"EMP{new_employee.id:03d}"
+        db.flush()
 
-    db.commit()
-    db.refresh(new_employee)
+        create_audit_log(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            module="Employee",
+            action="CREATE",
+            resource_type="Employee",
+            resource_id=str(new_employee.id),
+            description=(
+                f"Created employee "
+                f"'{new_employee.first_name} {new_employee.last_name}'"
+            ),
+            before_values=None,
+            after_values={
+                "employee_code": new_employee.employee_code,
+                "first_name": new_employee.first_name,
+                "last_name": new_employee.last_name,
+                "email": new_employee.email,
+                "phone": new_employee.phone,
+                "designation": new_employee.designation,
+                "salary": new_employee.salary,
+                "joining_date": (
+                    new_employee.joining_date.isoformat()
+                    if new_employee.joining_date
+                    else None
+                ),
+                "status": new_employee.status,
+                "department_id": new_employee.department_id,
+                "company_id": new_employee.company_id,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
+        )
 
-    create_audit_log(
-        db=db,
-        company_id=new_employee.company_id,
-        user_id=user_id,
-        module="Employee",
-        action="CREATE",
-        description=(
-            f"Created employee "
-            f"'{new_employee.first_name} {new_employee.last_name}'"
-        ),
-    )
+        db.commit()
+        db.refresh(new_employee)
 
-    return new_employee
+        return new_employee
 
+    except Exception:
+        db.rollback()
+        raise
 
-# ---------------------------------
-# Get All Employees
-# ---------------------------------
 def get_all_employees(
     db: Session,
     page: int = 1,
@@ -112,9 +132,6 @@ def get_all_employees(
     )
 
 
-# ---------------------------------
-# Get Employee By ID
-# ---------------------------------
 def get_employee_by_id(
     db: Session,
     employee_id: int,
@@ -138,15 +155,14 @@ def get_employee_by_id(
     return employee
 
 
-# ---------------------------------
-# Update Employee
-# ---------------------------------
 def update_employee(
     db: Session,
     employee_id: int,
     employee: EmployeeUpdate,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     existing = (
         db.query(Employee)
@@ -180,42 +196,91 @@ def update_employee(
                 detail="Employee email already exists."
             )
 
-    for key, value in employee.model_dump(
-        exclude_unset=True
-    ).items():
+    before_values = {
+        "employee_code": existing.employee_code,
+        "first_name": existing.first_name,
+        "last_name": existing.last_name,
+        "email": existing.email,
+        "phone": existing.phone,
+        "designation": existing.designation,
+        "salary": existing.salary,
+        "joining_date": (
+            existing.joining_date.isoformat()
+            if existing.joining_date
+            else None
+        ),
+        "status": existing.status,
+        "department_id": existing.department_id,
+        "company_id": existing.company_id,
+    }
 
-        # Don't allow changing company from frontend
-        if key != "company_id":
+    update_data = employee.model_dump(
+        exclude_unset=True
+    )
+
+    for key, value in update_data.items():
+        if key not in ["company_id", "employee_code"]:
             setattr(existing, key, value)
 
     existing.company_id = company_id
 
-    db.commit()
-    db.refresh(existing)
-
-    create_audit_log(
-        db=db,
-        company_id=existing.company_id,
-        user_id=user_id,
-        module="Employee",
-        action="UPDATE",
-        description=(
-            f"Updated employee "
-            f"'{existing.first_name} {existing.last_name}'"
+    after_values = {
+        "employee_code": existing.employee_code,
+        "first_name": existing.first_name,
+        "last_name": existing.last_name,
+        "email": existing.email,
+        "phone": existing.phone,
+        "designation": existing.designation,
+        "salary": existing.salary,
+        "joining_date": (
+            existing.joining_date.isoformat()
+            if existing.joining_date
+            else None
         ),
-    )
+        "status": existing.status,
+        "department_id": existing.department_id,
+        "company_id": existing.company_id,
+    }
 
-    return existing
+    try:
+        db.flush()
+
+        create_audit_log(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            module="Employee",
+            action="UPDATE",
+            resource_type="Employee",
+            resource_id=str(existing.id),
+            description=(
+                f"Updated employee "
+                f"'{existing.first_name} {existing.last_name}'"
+            ),
+            before_values=before_values,
+            after_values=after_values,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
+        )
+
+        db.commit()
+        db.refresh(existing)
+
+        return existing
+
+    except Exception:
+        db.rollback()
+        raise
 
 
-# ---------------------------------
-# Delete Employee
-# ---------------------------------
 def delete_employee(
     db: Session,
     employee_id: int,
     user_id: int,
     company_id: int,
+    ip_address: str = None,
+    user_agent: str = None,
 ):
     employee = (
         db.query(Employee)
@@ -236,18 +301,52 @@ def delete_employee(
         f"{employee.first_name} {employee.last_name}"
     )
 
-    db.delete(employee)
-    db.commit()
-
-    create_audit_log(
-        db=db,
-        company_id=company_id,
-        user_id=user_id,
-        module="Employee",
-        action="DELETE",
-        description=f"Deleted employee '{employee_name}'",
-    )
-
-    return {
-        "message": "Employee deleted successfully."
+    before_values = {
+        "employee_code": employee.employee_code,
+        "first_name": employee.first_name,
+        "last_name": employee.last_name,
+        "email": employee.email,
+        "phone": employee.phone,
+        "designation": employee.designation,
+        "salary": employee.salary,
+        "joining_date": (
+            employee.joining_date.isoformat()
+            if employee.joining_date
+            else None
+        ),
+        "status": employee.status,
+        "department_id": employee.department_id,
+        "company_id": employee.company_id,
     }
+
+    employee_id_value = employee.id
+
+    try:
+        db.delete(employee)
+        db.flush()
+
+        create_audit_log(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            module="Employee",
+            action="DELETE",
+            resource_type="Employee",
+            resource_id=str(employee_id_value),
+            description=f"Deleted employee '{employee_name}'",
+            before_values=before_values,
+            after_values=None,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            status="SUCCESS",
+        )
+
+        db.commit()
+
+        return {
+            "message": "Employee deleted successfully."
+        }
+
+    except Exception:
+        db.rollback()
+        raise
