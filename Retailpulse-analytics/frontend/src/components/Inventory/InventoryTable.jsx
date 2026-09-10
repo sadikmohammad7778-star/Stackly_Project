@@ -1,6 +1,9 @@
 import "./InventoryTable.css";
 
-export default function InventoryTable({ inventory }) {
+export default function InventoryTable({
+    inventory,
+    highlightedInventoryId,
+}) {
 
     return (
 
@@ -38,7 +41,15 @@ export default function InventoryTable({ inventory }) {
 
                             inventory.map((item) => (
 
-                                <tr key={item.id}>
+                                <tr
+                                    key={item.id}
+                                    id={`inventory-row-${item.id}`}
+                                    className={
+                                        item.id === highlightedInventoryId
+                                            ? "highlighted-inventory-row"
+                                            : ""
+                                    }
+                                >
 
                                     <td>{item.product.name}</td>
 

@@ -22,6 +22,8 @@ from app.models.product import Product
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
 
+from app.services.notification_service import NotificationService
+
 
 # ============================================================
 # Constants
@@ -1844,14 +1846,12 @@ def process_import(
     company_id: int,
     user_id: int,
 ):
-
     import_history = get_import(
         db=db,
         import_id=import_id,
         company_id=company_id,
     )
 
-    # Always validate immediately before processing.
     validation = validate_import(
         db=db,
         import_id=import_id,
@@ -1859,29 +1859,31 @@ def process_import(
     )
 
     if validation["invalid_records"] > 0:
-
-        import_history.status = (
-            "Validation Failed"
-        )
+        import_history.status = "Validation Failed"
 
         db.commit()
+
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            notification_type="IMPORT_FAILED",
+            title="Import Failed",
+            message=f"{import_history.import_type.title()} import failed validation. {validation['invalid_records']} records contain validation errors.",
+            priority="HIGH",
+            resource_type="Import",
+            resource_id=import_id,
+            dedupe_key=f"import:{import_id}:failed",
+        )
 
         return {
             "import_id": import_id,
             "status": "Validation Failed",
-            "total_records": validation[
-                "total_records"
-            ],
+            "total_records": validation["total_records"],
             "successful_records": 0,
-            "failed_records": validation[
-                "invalid_records"
-            ],
-            "duplicate_records": validation[
-                "duplicate_records"
-            ],
-            "validation_failures": validation[
-                "invalid_records"
-            ],
+            "failed_records": validation["invalid_records"],
+            "duplicate_records": validation["duplicate_records"],
+            "validation_failures": validation["invalid_records"],
         }
 
     df = load_import_dataframe(
@@ -1893,7 +1895,6 @@ def process_import(
     db.commit()
 
     if import_history.import_type == "products":
-
         (
             successful_records,
             failed_records,
@@ -1907,7 +1908,6 @@ def process_import(
         )
 
     elif import_history.import_type == "customers":
-
         (
             successful_records,
             failed_records,
@@ -1921,7 +1921,6 @@ def process_import(
         )
 
     else:
-
         (
             successful_records,
             failed_records,
@@ -1934,49 +1933,62 @@ def process_import(
             import_id=import_id,
         )
 
-    # ========================================================
-    # Update Import History
-    # ========================================================
-
-    import_history.successful_records = (
-        successful_records
-    )
-
-    import_history.failed_records = (
-        failed_records
-    )
-
-    import_history.duplicate_records = (
-        duplicate_records
-    )
-
-    import_history.completed_at = (
-        datetime.utcnow()
-    )
+    import_history.successful_records = successful_records
+    import_history.failed_records = failed_records
+    import_history.duplicate_records = duplicate_records
+    import_history.completed_at = datetime.utcnow()
 
     if failed_records == 0:
+        import_history.status = "Completed"
+    elif successful_records > 0:
+        import_history.status = "Completed With Errors"
+    else:
+        import_history.status = "Failed"
 
-        import_history.status = (
-            "Completed"
+    db.commit()
+    db.refresh(import_history)
+
+    if import_history.status == "Completed":
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            notification_type="IMPORT_COMPLETED",
+            title="Import Completed",
+            message=f"{import_history.import_type.title()} import completed successfully. {successful_records} records were imported.",
+            priority="MEDIUM",
+            resource_type="Import",
+            resource_id=import_id,
+            dedupe_key=f"import:{import_id}:completed",
         )
 
-    elif successful_records > 0:
-
-        import_history.status = (
-            "Completed With Errors"
+    elif import_history.status == "Completed With Errors":
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            notification_type="IMPORT_FAILED",
+            title="Import Completed With Errors",
+            message=f"{import_history.import_type.title()} import completed with errors. {successful_records} records succeeded and {failed_records} records failed.",
+            priority="HIGH",
+            resource_type="Import",
+            resource_id=import_id,
+            dedupe_key=f"import:{import_id}:completed-with-errors",
         )
 
     else:
-
-        import_history.status = (
-            "Failed"
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            notification_type="IMPORT_FAILED",
+            title="Import Failed",
+            message=f"{import_history.import_type.title()} import failed. {failed_records} records could not be imported.",
+            priority="CRITICAL",
+            resource_type="Import",
+            resource_id=import_id,
+            dedupe_key=f"import:{import_id}:failed",
         )
-
-    db.commit()
-
-    db.refresh(
-        import_history
-    )
 
     return {
         "import_id": import_id,
@@ -1987,7 +1999,6 @@ def process_import(
         "duplicate_records": duplicate_records,
         "validation_failures": 0,
     }
-
 
 # ============================================================
 # Import History

@@ -10,12 +10,17 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import NotificationDropdown from "./NotificationDropdown";
-import { getUnreadCount } from "../../api/notificationApi";
+import { useNotifications } from "../../context/NotificationContext";
 
 export default function Navbar() {
   const navigate = useNavigate();
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  const {
+    unreadCount,
+    loadUnreadCount,
+  } = useNotifications();
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -23,8 +28,6 @@ export default function Navbar() {
     month: "long",
     year: "numeric",
   });
-
-  // ================= Search =================
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -59,36 +62,10 @@ export default function Navbar() {
     setSearchTerm("");
   };
 
-  // ================= Notifications =================
-
   const [showNotifications, setShowNotifications] =
     useState(false);
 
-  const [unreadCount, setUnreadCount] = useState(0);
-
   const notificationRef = useRef(null);
-
-  const loadUnreadCount = async () => {
-    try {
-      const data = await getUnreadCount();
-      setUnreadCount(data.count);
-    } catch (error) {
-      console.error(
-        "Failed to load unread count:",
-        error
-      );
-    }
-  };
-
-  useEffect(() => {
-    loadUnreadCount();
-
-    const interval = setInterval(() => {
-      loadUnreadCount();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -120,9 +97,6 @@ export default function Navbar() {
 
   return (
     <header className="navbar">
-
-      {/* Left Section */}
-
       <div className="navbar-left">
         <div>
           <h2>RetailPulse Analytics</h2>
@@ -130,11 +104,8 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Search */}
-
       <div className="navbar-center">
         <div className="search">
-
           <FiSearch />
 
           <input
@@ -145,12 +116,10 @@ export default function Navbar() {
               setSearchTerm(e.target.value)
             }
           />
-
         </div>
 
         {searchTerm.trim() && (
           <div className="search-results">
-
             {filteredPages.length > 0 ? (
               filteredPages.map((page) => (
                 <div
@@ -169,17 +138,11 @@ export default function Navbar() {
                 No page found
               </div>
             )}
-
           </div>
         )}
       </div>
 
-      {/* Right Section */}
-
       <div className="navbar-right">
-
-        {/* Notifications */}
-
         <div
           className="notification-wrapper"
           ref={notificationRef}
@@ -192,19 +155,17 @@ export default function Navbar() {
 
             {unreadCount > 0 && (
               <span className="notification-badge">
-                {unreadCount}
+                {unreadCount > 99
+                  ? "99+"
+                  : unreadCount}
               </span>
             )}
           </button>
 
           {showNotifications && (
-            <NotificationDropdown
-              refreshUnreadCount={loadUnreadCount}
-            />
+            <NotificationDropdown />
           )}
         </div>
-
-        {/* Settings */}
 
         <button
           className="icon-btn"
@@ -213,10 +174,7 @@ export default function Navbar() {
           <FiSettings />
         </button>
 
-        {/* Profile */}
-
         <div className="profile">
-
           <img
             src="https://i.pravatar.cc/100"
             alt="Profile"
@@ -224,14 +182,10 @@ export default function Navbar() {
 
           <div>
             <h4>{user?.name || "User"}</h4>
-
             <span>{user?.role || "User"}</span>
           </div>
-
         </div>
-
       </div>
-
     </header>
   );
 }

@@ -1,132 +1,362 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
+from app.models.user import User
+
+IST = ZoneInfo("Asia/Kolkata")
+
+ROLE_NOTIFICATION_TYPES = {
+    "Super Admin": {
+        "STOCKOUT_RISK",
+        "LOW_STOCK",
+        "OVERSTOCK",
+        "SALES_ALERT",
+        "IMPORT_COMPLETED",
+        "IMPORT_FAILED",
+        "SYSTEM_ALERT",
+    },
+    "Company Admin": {
+        "STOCKOUT_RISK",
+        "LOW_STOCK",
+        "OVERSTOCK",
+        "SALES_ALERT",
+        "IMPORT_COMPLETED",
+        "IMPORT_FAILED",
+        "SYSTEM_ALERT",
+    },
+    "Analyst": {
+        "STOCKOUT_RISK",
+        "LOW_STOCK",
+        "OVERSTOCK",
+        "SALES_ALERT",
+    },
+    "Viewer": {
+        "STOCKOUT_RISK",
+        "LOW_STOCK",
+        "OVERSTOCK",
+    },
+}
 
 
-# ============================================================
-# Create Notification
-# ============================================================
+class NotificationService:
 
-def create_notification(
-    db: Session,
-    title: str,
-    message: str,
-    type: str,
-):
-    notification = Notification(
-        title=title,
-        message=message,
-        type=type,
-    )
-
-    db.add(notification)
-
-    # The calling service controls commit/rollback.
-    db.flush()
-
-    return notification
-
-
-# ============================================================
-# Get Notifications
-# ============================================================
-
-def get_notifications(
-    db: Session,
-):
-    return (
-        db.query(Notification)
-        .order_by(
-            Notification.created_at.desc()
+    @staticmethod
+    def can_receive_notification(
+        db: Session,
+        user_id: int,
+        notification_type: str,
+    ) -> bool:
+        user = (
+            db.query(User)
+            .filter(User.id == user_id)
+            .first()
         )
-        .all()
-    )
 
+        if not user:
+            return False
 
-# ============================================================
-# Get Unread Count
-# ============================================================
-
-def get_unread_count(
-    db: Session,
-):
-    return (
-        db.query(Notification)
-        .filter(
-            Notification.is_read == False
+        allowed_types = ROLE_NOTIFICATION_TYPES.get(
+            user.role,
+            set(),
         )
-        .count()
-    )
 
+        return notification_type in allowed_types
 
-# ============================================================
-# Mark Notification As Read
-# ============================================================
+    @staticmethod
+    def create_notification(
+        db: Session,
+        *,
+        company_id: int,
+        user_id: int,
+        notification_type: str,
+        title: str,
+        message: str,
+        priority: str = "LOW",
+        resource_type: str | None = None,
+        resource_id: int | None = None,
+        dedupe_key: str | None = None,
+        expires_at: datetime | None = None,
+    ) -> Notification | None:
 
-def mark_as_read(
-    db: Session,
-    notification_id: int,
-):
-    notification = (
-        db.query(Notification)
-        .filter(
-            Notification.id == notification_id
+        user = (
+            db.query(User)
+            .filter(
+                User.id == user_id,
+                User.company_id == company_id,
+            )
+            .first()
         )
-        .first()
-    )
 
-    if notification:
-        notification.is_read = True
+        if not user:
+            return None
 
+        if not NotificationService.can_receive_notification(
+            db=db,
+            user_id=user_id,
+            notification_type=notification_type,
+        ):
+            return None
+
+        if dedupe_key:
+            existing = (
+                db.query(Notification)
+                .filter(
+                    Notification.company_id == company_id,
+                    Notification.user_id == user_id,
+                    Notification.dedupe_key == dedupe_key,
+                    Notification.resolved_at.is_(None),
+                )
+                .first()
+            )
+
+            if existing:
+                return existing
+
+        notification = Notification(
+            company_id=company_id,
+            user_id=user_id,
+            type=notification_type,
+            title=title,
+            message=message,
+            priority=priority,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            is_read=False,
+            dedupe_key=dedupe_key,
+            expires_at=expires_at,
+        )
+
+        db.add(notification)
         db.commit()
         db.refresh(notification)
 
-    return notification
+        return notification
 
+    @staticmethod
+    def get_notifications(
+        db: Session,
+        *,
+        company_id: int,
+        user_id: int,
+        page: int = 1,
+        page_size: int = 20,
+        is_read: bool | None = None,
+        notification_type: str | None = None,
+        priority: str | None = None,
+    ):
 
-# ============================================================
-# Mark All Notifications As Read
-# ============================================================
-
-def mark_all_as_read(
-    db: Session,
-):
-    notifications = (
-        db.query(Notification)
-        .filter(
-            Notification.is_read == False
+        query = (
+            db.query(Notification)
+            .filter(
+                Notification.company_id == company_id,
+                Notification.user_id == user_id,
+            )
         )
-        .all()
-    )
 
-    for notification in notifications:
-        notification.is_read = True
+        if is_read is not None:
+            query = query.filter(
+                Notification.is_read == is_read
+            )
 
-    db.commit()
+        if notification_type:
+            query = query.filter(
+                Notification.type == notification_type
+            )
 
-    return {
-        "message": "All notifications marked as read"
-    }
+        if priority:
+            query = query.filter(
+                Notification.priority == priority
+            )
 
+        now = datetime.now(IST)
 
-# ============================================================
-# Delete Notification
-# ============================================================
-
-def delete_notification(
-    db: Session,
-    notification_id: int,
-):
-    notification = (
-        db.query(Notification)
-        .filter(
-            Notification.id == notification_id
+        query = query.filter(
+            (Notification.expires_at.is_(None))
+            | (Notification.expires_at > now)
         )
-        .first()
-    )
 
-    if notification:
-        db.delete(notification)
+        total = query.count()
+
+        unread_count = (
+            db.query(func.count(Notification.id))
+            .filter(
+                Notification.company_id == company_id,
+                Notification.user_id == user_id,
+                Notification.is_read.is_(False),
+                (
+                    (Notification.expires_at.is_(None))
+                    | (Notification.expires_at > now)
+                ),
+            )
+            .scalar()
+            or 0
+        )
+
+        offset = (page - 1) * page_size
+
+        notifications = (
+            query
+            .order_by(Notification.created_at.desc())
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
+        return {
+            "items": notifications,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "unread_count": unread_count,
+        }
+
+    @staticmethod
+    def get_unread_count(
+        db: Session,
+        *,
+        company_id: int,
+        user_id: int,
+    ):
+
+        now = datetime.now(IST)
+
+        return (
+            db.query(func.count(Notification.id))
+            .filter(
+                Notification.company_id == company_id,
+                Notification.user_id == user_id,
+                Notification.is_read.is_(False),
+                (
+                    (Notification.expires_at.is_(None))
+                    | (Notification.expires_at > now)
+                ),
+            )
+            .scalar()
+            or 0
+        )
+
+    @staticmethod
+    def mark_as_read(
+        db: Session,
+        *,
+        notification_id: int,
+        company_id: int,
+        user_id: int,
+    ):
+
+        notification = (
+            db.query(Notification)
+            .filter(
+                Notification.id == notification_id,
+                Notification.company_id == company_id,
+                Notification.user_id == user_id,
+            )
+            .first()
+        )
+
+        if not notification:
+            return None
+
+        if not notification.is_read:
+            notification.is_read = True
+            notification.read_at = datetime.now(IST)
+
+            db.commit()
+            db.refresh(notification)
+
+        return notification
+
+    @staticmethod
+    def mark_all_as_read(
+        db: Session,
+        *,
+        company_id: int,
+        user_id: int,
+    ):
+
+        notifications = (
+            db.query(Notification)
+            .filter(
+                Notification.company_id == company_id,
+                Notification.user_id == user_id,
+                Notification.is_read.is_(False),
+            )
+            .all()
+        )
+
+        if not notifications:
+            return 0
+
+        now = datetime.now(IST)
+
+        for notification in notifications:
+            notification.is_read = True
+            notification.read_at = now
+
         db.commit()
 
-    return notification
+        return len(notifications)
+
+    @staticmethod
+    def resolve_notification(
+        db: Session,
+        *,
+        company_id: int,
+        user_id: int,
+        dedupe_key: str,
+    ):
+
+        notifications = (
+            db.query(Notification)
+            .filter(
+                Notification.company_id == company_id,
+                Notification.user_id == user_id,
+                Notification.dedupe_key == dedupe_key,
+                Notification.resolved_at.is_(None),
+            )
+            .all()
+        )
+
+        if not notifications:
+            return 0
+
+        now = datetime.now(IST)
+
+        for notification in notifications:
+            notification.resolved_at = now
+
+        db.commit()
+
+        return len(notifications)
+
+
+def create_notification(
+    db: Session,
+    company_id: int,
+    user_id: int,
+    type: str,
+    title: str,
+    message: str,
+    priority: str = "LOW",
+    resource_type: str | None = None,
+    resource_id: int | None = None,
+    dedupe_key: str | None = None,
+    expires_at: datetime | None = None,
+):
+    return NotificationService.create_notification(
+        db=db,
+        company_id=company_id,
+        user_id=user_id,
+        notification_type=type,
+        title=title,
+        message=message,
+        priority=priority,
+        resource_type=resource_type,
+        resource_id=resource_id,
+        dedupe_key=dedupe_key,
+        expires_at=expires_at,
+    )

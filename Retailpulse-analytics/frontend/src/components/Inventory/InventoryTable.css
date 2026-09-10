@@ -48,3 +48,13 @@
   background: #fee2e2;
   color: #b91c1c;
 }
+
+.highlighted-inventory-row {
+    background: #fff7cc !important;
+    outline: 2px solid #f59e0b;
+    outline-offset: -2px;
+}
+
+.highlighted-inventory-row td {
+    font-weight: 600;
+}

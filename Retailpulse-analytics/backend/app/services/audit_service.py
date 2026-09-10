@@ -1,11 +1,38 @@
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.models.audit_log import AuditLog
 from app.models.user import User
+from app.models.notification import Notification
+
+IST = ZoneInfo("Asia/Kolkata")
+
+SYSTEM_ALERT_ACTIONS = {
+    "CREATE",
+    "UPDATE",
+    "DELETE",
+    "STOCK_IN",
+    "STOCK_OUT",
+    "ADJUST",
+}
+
+SYSTEM_ALERT_MODULES = {
+    "Inventory",
+    "Sales",
+    "Data Import",
+    "Company",
+    "User",
+    "Employee",
+}
+
+SYSTEM_ALERT_ROLES = {
+    "Super Admin",
+    "Company Admin",
+}
 
 
 def create_audit_log(
@@ -41,9 +68,57 @@ def create_audit_log(
     )
 
     db.add(log)
+    db.flush()
 
-    # Keep the audit record inside the caller's transaction.
-    # The calling service controls commit/rollback.
+    if (
+        status == "SUCCESS"
+        and action in SYSTEM_ALERT_ACTIONS
+        and module in SYSTEM_ALERT_MODULES
+    ):
+        users = (
+            db.query(User)
+            .filter(
+                User.company_id == company_id,
+                User.role.in_(SYSTEM_ALERT_ROLES),
+                User.status.is_(True),
+            )
+            .all()
+        )
+
+        for user in users:
+            dedupe_key = f"audit:{log.id}:system-alert:{user.id}"
+
+            existing = (
+                db.query(Notification)
+                .filter(
+                    Notification.company_id == company_id,
+                    Notification.user_id == user.id,
+                    Notification.dedupe_key == dedupe_key,
+                )
+                .first()
+            )
+
+            if existing:
+                continue
+
+            notification = Notification(
+                company_id=company_id,
+                user_id=user.id,
+                type="SYSTEM_ALERT",
+                title="System Activity",
+                message=description,
+                priority="LOW",
+                resource_type=resource_type,
+                resource_id=int(resource_id)
+                if resource_id and str(resource_id).isdigit()
+                else None,
+                is_read=False,
+                created_at=datetime.now(IST),
+                dedupe_key=dedupe_key,
+            )
+
+            db.add(notification)
+
     db.flush()
 
     return log
@@ -172,6 +247,8 @@ def get_audit_logs(
         "total_updates": total_updates,
         "total_deletes": total_deletes,
     }
+
+
 def get_audit_log_by_id(
     db: Session,
     company_id: int,

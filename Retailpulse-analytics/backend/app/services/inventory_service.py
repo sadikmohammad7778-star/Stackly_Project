@@ -8,6 +8,9 @@ from app.models.product import Product
 from app.models.category import Category
 
 from app.services.audit_service import create_audit_log
+from app.services.notification_service import NotificationService
+
+
 from app.utils.inventory_utils import calculate_stock_status
 
 from app.schemas.inventory_schema import (
@@ -19,6 +22,142 @@ from app.schemas.inventory_schema import (
 
 class InventoryService:
 
+    @staticmethod
+    def create_inventory_notification(
+        db: Session,
+        inventory: Inventory,
+        product: Product,
+        user_id: int,
+        company_id: int,
+    ):
+        low_stock_key = f"inventory:{inventory.id}:LOW_STOCK"
+        stockout_key = f"inventory:{inventory.id}:STOCKOUT_RISK"
+        overstock_key = f"inventory:{inventory.id}:OVERSTOCK"
+
+        status = inventory.stock_status
+
+        if status == "Out of Stock":
+            NotificationService.resolve_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                dedupe_key=low_stock_key,
+            )
+
+            NotificationService.resolve_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                dedupe_key=overstock_key,
+            )
+
+            return NotificationService.create_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                notification_type="STOCKOUT_RISK",
+                title="Stockout Risk",
+                message=(
+                    f"{product.name} is out of stock. "
+                    "Immediate replenishment is required."
+                ),
+                priority="CRITICAL",
+                resource_type="Inventory",
+                resource_id=inventory.id,
+                dedupe_key=stockout_key,
+            )
+
+        if status == "Low Stock":
+            NotificationService.resolve_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                dedupe_key=stockout_key,
+            )
+
+            NotificationService.resolve_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                dedupe_key=overstock_key,
+            )
+
+            return NotificationService.create_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                notification_type="LOW_STOCK",
+                title="Low Stock Alert",
+                message=(
+                    f"{product.name} is low on stock. "
+                    f"Available stock: {inventory.available_stock}. "
+                    f"Reorder level: {inventory.reorder_level}."
+                ),
+                priority="HIGH",
+                resource_type="Inventory",
+                resource_id=inventory.id,
+                dedupe_key=low_stock_key,
+            )
+
+        if (
+            inventory.reorder_level is not None
+            and inventory.available_stock >= inventory.reorder_level * 3
+        ):
+            NotificationService.resolve_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                dedupe_key=low_stock_key,
+            )
+
+            NotificationService.resolve_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                dedupe_key=stockout_key,
+            )
+
+            return NotificationService.create_notification(
+                db=db,
+                company_id=company_id,
+                user_id=user_id,
+                notification_type="OVERSTOCK",
+                title="Overstock Alert",
+                message=(
+                    f"{product.name} has excess stock. "
+                    f"Available stock: {inventory.available_stock}. "
+                    f"Overstock threshold: "
+                    f"{inventory.reorder_level * 3}."
+                ),
+                priority="MEDIUM",
+                resource_type="Inventory",
+                resource_id=inventory.id,
+                dedupe_key=overstock_key,
+            )
+
+        NotificationService.resolve_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            dedupe_key=low_stock_key,
+        )
+
+        NotificationService.resolve_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            dedupe_key=stockout_key,
+        )
+
+        NotificationService.resolve_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            dedupe_key=overstock_key,
+        )
+
+        return None
+    
     @staticmethod
     def get_inventory(
         db: Session,
@@ -216,11 +355,18 @@ class InventoryService:
         db.commit()
         db.refresh(inventory)
 
+        InventoryService.create_inventory_notification(
+            db=db,
+            inventory=inventory,
+            product=product,
+            user_id=user_id,
+            company_id=company_id,
+        )
+
         return {
             "message": "Stock added successfully",
             "inventory": inventory,
         }
-
 
     @staticmethod
     def remove_stock(
@@ -332,6 +478,14 @@ class InventoryService:
         )
         db.commit()
         db.refresh(inventory)
+
+        InventoryService.create_inventory_notification(
+            db=db,
+            inventory=inventory,
+            product=product,
+            user_id=user_id,
+            company_id=company_id,
+        )
 
         return {
             "message": "Stock removed successfully",
@@ -450,6 +604,14 @@ class InventoryService:
         )
         db.commit()
         db.refresh(inventory)
+
+        InventoryService.create_inventory_notification(
+            db=db,
+            inventory=inventory,
+            product=product,
+            user_id=user_id,
+            company_id=company_id,
+        )
 
         return {
             "message": "Stock adjusted successfully",

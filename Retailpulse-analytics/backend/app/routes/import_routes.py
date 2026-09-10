@@ -167,3 +167,16 @@ def get_import_details(
         import_id=import_id,
         company_id=current_user.company_id,
     )
+
+@router.post("/{import_id}/process")
+def process_import(
+    import_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_company_admin),
+):
+    return import_service.process_import(
+        db=db,
+        import_id=import_id,
+        company_id=current_user.company_id,
+        user_id=current_user.id,
+    )

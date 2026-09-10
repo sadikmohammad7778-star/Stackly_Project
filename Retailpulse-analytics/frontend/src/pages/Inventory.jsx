@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { getDashboard, getInventory } from "../api/inventoryApi";
 
@@ -11,6 +12,9 @@ import StockModal from "../components/Inventory/StockModal";
 import "./Inventory.css";
 
 export default function Inventory() {
+    const [searchParams] = useSearchParams();
+    const inventoryId = searchParams.get("inventory_id");
+
     const [dashboard, setDashboard] = useState({
         total_products: 0,
         total_inventory_quantity: 0,
@@ -19,22 +23,19 @@ export default function Inventory() {
     });
 
     const [inventory, setInventory] = useState([]);
-
     const [search, setSearch] = useState("");
-
     const [status, setStatus] = useState("");
-
     const [openModal, setOpenModal] = useState(false);
+    const [highlightedInventoryId, setHighlightedInventoryId] = useState(null);
 
     useEffect(() => {
         loadDashboard();
         loadInventory();
-    }, []);
+    }, [inventoryId]);
 
     const loadDashboard = async () => {
         try {
             const data = await getDashboard();
-
             setDashboard(data);
         } catch (error) {
             console.error("Error loading inventory dashboard:", error);
@@ -43,18 +44,33 @@ export default function Inventory() {
 
     const loadInventory = async () => {
         try {
-            // Company ID is now taken automatically
-            // from the logged-in user's JWT
-            const data = await getInventory(
-                search,
-                status
-            );
+            const data = await getInventory(search, status);
+            const inventoryData = Array.isArray(data) ? data : [];
 
-            console.log("Inventory:", data);
+            setInventory(inventoryData);
 
-            setInventory(
-                Array.isArray(data) ? data : []
-            );
+            if (inventoryId) {
+                const targetInventory = inventoryData.find(
+                    (item) => item.id === Number(inventoryId)
+                );
+
+                if (targetInventory) {
+                    setHighlightedInventoryId(targetInventory.id);
+
+                    setTimeout(() => {
+                        const element = document.getElementById(
+                            `inventory-row-${targetInventory.id}`
+                        );
+
+                        if (element) {
+                            element.scrollIntoView({
+                                behavior: "smooth",
+                                block: "center",
+                            });
+                        }
+                    }, 200);
+                }
+            }
         } catch (error) {
             console.error("Error loading inventory:", error);
             setInventory([]);
@@ -63,7 +79,6 @@ export default function Inventory() {
 
     return (
         <div className="inventory-page">
-
             <div className="page-header">
                 <h1>Inventory Management</h1>
 
@@ -108,14 +123,15 @@ export default function Inventory() {
 
             <InventoryTable
                 inventory={inventory}
+                highlightedInventoryId={highlightedInventoryId}
             />
 
             <StockModal
                 isOpen={openModal}
                 onClose={() => setOpenModal(false)}
                 onSuccess={loadInventory}
+                inventory={inventory}
             />
-
         </div>
     );
 }

@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-
 from sqlalchemy.orm import Session
 
 from app.config.database import SessionLocal
@@ -19,14 +18,11 @@ def get_db():
         db.close()
 
 
-
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ):
     token = credentials.credentials
-
-    print("TOKEN:", token)
 
     try:
         payload = jwt.decode(
@@ -35,10 +31,7 @@ def get_current_user(
             algorithms=[settings.ALGORITHM],
         )
 
-        print("PAYLOAD:", payload)
-
         user_id = payload.get("user_id")
-        print("USER ID:", user_id)
 
         if user_id is None:
             raise HTTPException(
@@ -58,8 +51,6 @@ def get_current_user(
         .filter(User.id == user_id)
         .first()
     )
-
-    print("USER:", user)
 
     if not user:
         raise HTTPException(

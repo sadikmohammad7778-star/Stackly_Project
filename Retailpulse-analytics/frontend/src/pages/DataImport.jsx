@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   uploadImport,
@@ -26,6 +27,7 @@ export default function DataImport() {
 
   const [selectedImport, setSelectedImport] = useState(null);
   const [details, setDetails] = useState(null);
+  const [searchParams] = useSearchParams();
 
   // ============================================================
   // Load Import History
@@ -220,6 +222,14 @@ export default function DataImport() {
       setError("Failed to load import details.");
     }
   };
+
+  useEffect(() => {
+    const importId = searchParams.get("import_id");
+
+    if (importId) {
+      handleViewDetails(Number(importId));
+    }
+  }, [searchParams]);
 
   
 

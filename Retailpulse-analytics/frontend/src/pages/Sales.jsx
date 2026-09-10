@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     FiPlus,
     FiEdit,
@@ -59,6 +60,8 @@ export default function Sales() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(7);
 
+    const [searchParams] = useSearchParams();
+
 
     // ========================================================
     // Load Sales
@@ -68,6 +71,14 @@ export default function Sales() {
         loadSales();
         loadSummary();
     }, []);
+
+    useEffect(() => {
+        const saleId = searchParams.get("sale_id");
+
+        if (saleId) {
+            handleView(Number(saleId));
+        }
+    }, [searchParams]);
 
 
     const loadSales = async () => {

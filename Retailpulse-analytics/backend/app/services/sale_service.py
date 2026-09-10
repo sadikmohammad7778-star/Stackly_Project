@@ -4,8 +4,9 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.services.notification_service import create_notification
+from app.services.notification_service import NotificationService
 from app.services.audit_service import create_audit_log
+from app.services.inventory_service import InventoryService
 
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
@@ -196,11 +197,7 @@ def create_sale(
 
         # ----------------------------------------------------
         # Validate Company
-        # ----------------------------------------------------
-
-        # ----------------------------------------------------
-        # Validate Company
-        # ----------------------------------------------------
+        # -----------------------------------------------------
 
         company = (
             db.query(Company)
@@ -453,35 +450,13 @@ def create_sale(
 
             subtotal += line_subtotal
 
-            # ------------------------------------------------
-            # Stock Notifications
-            # ------------------------------------------------
-
-            if inventory.stock_status == "Out of Stock":
-
-                create_notification(
-                    db=db,
-                    title="Out of Stock",
-                    message=(
-                        f"{product.name} is now "
-                        f"out of stock."
-                    ),
-                    type="danger",
-                )
-
-            elif inventory.stock_status == "Low Stock":
-
-                create_notification(
-                    db=db,
-                    title="Low Stock",
-                    message=(
-                        f"{product.name} has only "
-                        f"{inventory.available_stock} "
-                        f"items available."
-                    ),
-                    type="warning",
-                )
-
+            InventoryService.create_inventory_notification(
+                db=db,
+                inventory=inventory,
+                product=product,
+                user_id=user_id,
+                company_id=company_id,
+            )
         # ----------------------------------------------------
         # Overall Billing
         # ----------------------------------------------------
@@ -565,15 +540,21 @@ def create_sale(
         # Success Notification
         # ----------------------------------------------------
 
-        create_notification(
-                db=db,
-                title="New Sale",
-                message=(
-                    f"Invoice {db_sale.invoice_number} "
-                    f"created successfully. "
-                    f"Total ₹{db_sale.total_amount:.2f}"
-                ),
-                type="success",
+        NotificationService.create_notification(
+            db=db,
+            company_id=company_id,
+            user_id=user_id,
+            notification_type="SALES_ALERT",
+            title="New Sale",
+            message=(
+                f"Invoice {db_sale.invoice_number} "
+                f"created successfully. "
+                f"Total ₹{db_sale.total_amount:.2f}"
+            ),
+            priority="MEDIUM",
+            resource_type="Sale",
+            resource_id=db_sale.id,
+            dedupe_key=f"sale:{db_sale.id}",
         )
 
         db.commit()
