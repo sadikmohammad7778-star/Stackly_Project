@@ -1,0 +1,154 @@
+# ==========================================
+# RETAILPULSE ANALYTICS - GLOBAL GITIGNORE
+# ==========================================
+
+# ==========================================
+# ENVIRONMENT VARIABLES / SECRETS
+# ==========================================
+
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# FRONTEND - NODE / REACT / VITE
+# ==========================================
+
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# NPM / Yarn / PNPM logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Coverage
+frontend/coverage/
+
+# ==========================================
+# BACKEND - PYTHON
+# ==========================================
+
+backend/venv/
+backend/.venv/
+backend/env/
+backend/ENV/
+
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/**/*.py[cod]
+
+# Pytest
+backend/.pytest_cache/
+
+# Coverage
+backend/.coverage
+backend/.coverage.*
+backend/htmlcov/
+
+# Python build files
+backend/build/
+backend/dist/
+backend/*.egg-info/
+backend/**/*.egg-info/
+
+# ==========================================
+# BACKEND ENVIRONMENT FILES
+# ==========================================
+
+backend/.env
+backend/.env.*
+
+!backend/.env.example
+
+# ==========================================
+# GENERATED REPORTS
+# ==========================================
+
+backend/generated_reports/
+generated_reports/
+
+# ==========================================
+# UPLOADED FILES
+# ==========================================
+
+backend/uploads/
+uploads/
+
+# ==========================================
+# LOG FILES
+# ==========================================
+
+*.log
+logs/
+
+# ==========================================
+# DATABASE FILES
+# ==========================================
+
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================================
+# TEST / TEMPORARY FILES
+# ==========================================
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# ==========================================
+# IDE / EDITORS
+# ==========================================
+
+.vscode/
+.idea/
+
+# VS Code local settings
+*.code-workspace
+
+# ==========================================
+# OPERATING SYSTEM FILES
+# ==========================================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==========================================
+# PYTHON TOOLS
+# ==========================================
+
+.mypy_cache/
+.ruff_cache/
+.pyre/
+
+# ==========================================
+# JUPYTER
+# ==========================================
+
+.ipynb_checkpoints/
+
+# ==========================================
+# FRONTEND CACHE
+# ==========================================
+
+frontend/.eslintcache
+frontend/.stylelintcache
+
+# ==========================================
+# BACKUP FILES
+# ==========================================
+
+*~
