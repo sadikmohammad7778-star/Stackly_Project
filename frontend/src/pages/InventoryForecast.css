@@ -1,0 +1,265 @@
+/* ================================
+   Inventory Forecast Table
+================================ */
+
+.forecast-table-container {
+    width: 100%;
+    margin-top: 25px;
+    overflow: hidden;
+}
+
+.forecast-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 10px;
+}
+
+.forecast-table-wrapper table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+}
+
+.forecast-table-wrapper th,
+.forecast-table-wrapper td {
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.forecast-table-wrapper th {
+    font-weight: 600;
+}
+
+.forecast-table-wrapper tbody tr {
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.forecast-table-wrapper tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* ================================
+   Risk Badges
+================================ */
+
+.risk-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.risk-healthy {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.risk-low-stock {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.risk-stockout-risk {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.risk-out-of-stock {
+    background: #fecaca;
+    color: #7f1d1d;
+}
+
+.risk-overstock {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+/* ================================
+   Forecast Filters
+================================ */
+
+.forecast-filters {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.forecast-filters input[type="text"],
+.forecast-filters select {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #dbe2ea;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.forecast-filters input[type="text"] {
+    width: 230px;
+}
+
+.forecast-filters select {
+    min-width: 150px;
+    cursor: pointer;
+}
+
+.forecast-filters input[type="text"]:focus,
+.forecast-filters select:focus {
+    border-color: #2563eb;
+}
+
+.reorder-filter {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #dbe2ea;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.reorder-filter input {
+    cursor: pointer;
+}
+
+/* ========================================
+   Responsive Inventory Forecast
+======================================== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+
+    .inventory-forecast-page {
+        padding: 20px;
+    }
+
+    .forecast-summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .forecast-filters {
+        gap: 10px;
+    }
+
+    .forecast-filters input[type="text"] {
+        width: 220px;
+    }
+
+    .forecast-filters select {
+        min-width: 140px;
+    }
+
+    .forecast-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .forecast-table-wrapper table {
+        min-width: 1000px;
+    }
+}
+
+.forecast-product-button {
+    border: none;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+
+    color: #1E3A5F;
+    font: inherit;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.forecast-product-button:hover {
+    color: #2563EB;
+    text-decoration: underline;
+}
+
+
+/* Mobile */
+@media (max-width: 768px) {
+
+    .inventory-forecast-page {
+        padding: 15px;
+    }
+
+    .inventory-forecast-header h1 {
+        font-size: 24px;
+    }
+
+    .inventory-forecast-header p {
+        font-size: 14px;
+    }
+
+
+    /* Summary cards */
+
+    .forecast-summary-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+
+    /* Filters */
+
+    .forecast-filters {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .forecast-filters input[type="text"],
+    .forecast-filters select {
+        width: 100%;
+        min-width: 0;
+        height: 42px;
+    }
+
+    .reorder-filter {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+
+    /* Table */
+
+    .forecast-table-container {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .forecast-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .forecast-table-wrapper table {
+        min-width: 1000px;
+    }
+
+    .forecast-table-wrapper th,
+    .forecast-table-wrapper td {
+        white-space: nowrap;
+    }
+}
+
+

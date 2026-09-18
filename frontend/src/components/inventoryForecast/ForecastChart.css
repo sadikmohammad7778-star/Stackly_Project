@@ -1,0 +1,52 @@
+.forecast-chart-card {
+    background: #FFFFFF;
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.forecast-chart-header {
+    margin-bottom: 20px;
+}
+
+.forecast-chart-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #111827;
+}
+
+.forecast-chart-header p {
+    margin: 6px 0 0;
+    color: #64748B;
+    font-size: 14px;
+}
+
+.forecast-chart {
+    width: 100%;
+}
+
+.forecast-chart-empty {
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748B;
+    border: 1px dashed #CBD5E1;
+    border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+
+    .forecast-chart-card {
+        padding: 15px;
+    }
+
+    .forecast-chart-header h2 {
+        font-size: 18px;
+    }
+
+    .forecast-chart-header p {
+        font-size: 13px;
+    }
+}

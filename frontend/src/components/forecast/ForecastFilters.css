@@ -1,0 +1,44 @@
+.forecast-filter{
+
+    display:flex;
+
+    gap:15px;
+
+    flex-wrap:wrap;
+
+    margin-bottom:25px;
+
+}
+
+.forecast-filter input,
+.forecast-filter select{
+
+    padding:10px;
+
+    border:1px solid #ccc;
+
+    border-radius:5px;
+
+}
+
+.forecast-filter button{
+
+    padding:10px 18px;
+
+    background:#1976d2;
+
+    color:white;
+
+    border:none;
+
+    border-radius:5px;
+
+    cursor:pointer;
+
+}
+
+.forecast-filter button:hover{
+
+    background:#1565c0;
+
+}

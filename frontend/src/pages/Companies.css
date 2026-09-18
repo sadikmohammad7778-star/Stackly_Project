@@ -1,0 +1,220 @@
+/* Companies / Categories / Products */
+
+.companies-page {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Header */
+
+.companies-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.companies-header button {
+    background: #6366F1;
+    color: #FFFFFF;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    cursor: pointer;
+}
+
+.company-search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    width: 300px;
+    height: 45px;
+
+    padding: 0 15px;
+    box-sizing: border-box;
+
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+}
+
+.company-search-box svg {
+    color: #64748B;
+    flex-shrink: 0;
+}
+
+.company-search-box input {
+    width: 100%;
+    height: 100%;
+
+    border: none;
+    outline: none;
+    background: transparent;
+
+    font-size: 14px;
+}
+
+.company-search-box input::placeholder {
+    color: #94A3B8;
+}
+
+/* Category Search */
+
+.category-search-box,
+.product-search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    width: 100%;
+    height: 48px;
+
+    padding: 0 15px;
+    box-sizing: border-box;
+
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+}
+
+.category-search-box svg,
+.product-search-box svg {
+    color: #64748B;
+    flex-shrink: 0;
+}
+
+.category-search-box input,
+.product-search-box input {
+    width: 100%;
+    height: 100%;
+
+    border: none;
+    outline: none;
+    background: transparent;
+
+    font-size: 15px;
+}
+
+.category-search-box input::placeholder,
+.product-search-box input::placeholder {
+    color: #94A3B8;
+}
+
+/* Table */
+
+.table-card {
+    background: #FFFFFF;
+    border-radius: 15px;
+    padding: 20px;
+
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+
+    overflow-x: auto;
+}
+
+.table-card table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-card th,
+.table-card td {
+    padding: 15px;
+    border-bottom: 1px solid #E5E7EB;
+    text-align: left;
+}
+
+/* Actions */
+
+.edit,
+.delete {
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.edit {
+    background: #3B82F6;
+    color: #FFFFFF;
+}
+
+.delete {
+    background: #EF4444;
+    color: #FFFFFF;
+}
+
+/* Status */
+
+.status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status.in-stock {
+    background: #22C55E;
+}
+
+.status.low-stock {
+    background: #F59E0B;
+}
+
+.status.out-of-stock {
+    background: #EF4444;
+}
+
+/* Responsive */
+
+@media (max-width: 992px) {
+
+    .table-card {
+        padding: 15px;
+    }
+
+    .table-card table {
+        min-width: 650px;
+    }
+
+    .table-card th,
+    .table-card td {
+        padding: 11px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+
+    .companies-page {
+        gap: 18px;
+    }
+
+    .companies-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .companies-header button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .table-card {
+        padding: 12px;
+    }
+
+    .table-card th,
+    .table-card td {
+        padding: 10px;
+        font-size: 13px;
+    }
+}

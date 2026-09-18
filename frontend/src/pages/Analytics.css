@@ -1,0 +1,161 @@
+.analytics-page {
+  padding: 25px;
+  background: #f4f7fb;
+  min-height: 100vh;
+}
+
+.analytics-page h2 {
+  margin-bottom: 25px;
+  color: #1f2937;
+}
+
+.analytics-loading,
+.analytics-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+  flex-direction: column;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 25px;
+  margin-top: 25px;
+}
+
+
+.export-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.pdf-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.pdf-btn:hover {
+  background: #b91c1c;
+}
+.dashboard-header {
+    margin-bottom: 30px;
+}
+
+.dashboard-header p {
+    color: #6b7280;
+}
+
+/* =========================
+   Laptop - 1200px
+========================= */
+
+@media (max-width: 1200px) {
+
+    .analytics-page {
+        padding: 25px;
+    }
+
+    .chart-grid {
+        gap: 18px;
+    }
+
+    .dashboard-header h2 {
+        font-size: 30px;
+    }
+}
+
+
+/* =========================
+   Tablet - 992px
+========================= */
+
+@media (max-width: 992px) {
+
+    .analytics-page {
+        padding: 20px;
+    }
+
+    .chart-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .dashboard-header h2 {
+        font-size: 28px;
+    }
+
+    .dashboard-header p {
+        font-size: 15px;
+    }
+}
+
+
+/* =========================
+   Mobile - 768px
+========================= */
+
+@media (max-width: 768px) {
+
+    .analytics-page {
+        padding: 15px;
+    }
+
+    .chart-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dashboard-header h2 {
+        font-size: 24px;
+    }
+
+    .dashboard-header p {
+        font-size: 14px;
+    }
+
+    .dashboard-actions {
+        width: 100%;
+    }
+
+    .dashboard-actions select,
+    .refresh-btn,
+    .export-btn {
+        width: 100%;
+    }
+}
+
+
+/* =========================
+   Small Mobile - 480px
+========================= */
+
+@media (max-width: 480px) {
+
+    .analytics-page {
+        padding: 10px;
+    }
+
+    .dashboard-header h2 {
+        font-size: 20px;
+    }
+
+    .dashboard-header p {
+        font-size: 13px;
+    }
+
+    .chart-grid {
+        gap: 12px;
+    }
+}

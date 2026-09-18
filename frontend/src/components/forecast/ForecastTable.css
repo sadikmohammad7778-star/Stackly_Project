@@ -1,0 +1,22 @@
+.forecast-table {
+  margin-top: 25px;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.forecast-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.forecast-table th,
+.forecast-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.forecast-table th {
+  background: #1976d2;
+  color: white;
+}

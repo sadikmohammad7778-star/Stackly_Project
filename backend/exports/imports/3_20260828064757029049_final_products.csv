@@ -1,0 +1,4 @@
+name,sku,category,price,stock,brand
+Laptops,DEMO005,Electronics,55000,20,assus
+Mobiles ,DEMO006,Electronics,30000,25,vivo
+TVs,DEMO007,Electronics,40000,15,samsung

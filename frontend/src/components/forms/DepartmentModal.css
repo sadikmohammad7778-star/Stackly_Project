@@ -1,0 +1,154 @@
+/* ===========================
+   Modal Overlay
+=========================== */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* ===========================
+   Modal Box
+=========================== */
+
+.modal {
+    width: 450px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    animation: popup 0.25s ease;
+}
+
+@keyframes popup {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ===========================
+   Heading
+=========================== */
+
+.modal h2 {
+    margin: 0 0 25px;
+    text-align: center;
+    color: #1E293B;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* ===========================
+   Form
+=========================== */
+
+.modal form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* ===========================
+   Inputs
+=========================== */
+
+.modal input,
+.modal textarea,
+.modal select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    font-size: 15px;
+    outline: none;
+    transition: 0.3s;
+    box-sizing: border-box;
+}
+
+.modal input:focus,
+.modal textarea:focus,
+.modal select:focus {
+    border-color: #6366F1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.modal textarea {
+    resize: none;
+    min-height: 90px;
+}
+
+/* ===========================
+   Buttons
+=========================== */
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.modal-buttons button {
+    border: none;
+    padding: 11px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.modal-buttons button:first-child {
+    background: #E2E8F0;
+    color: #334155;
+}
+
+.modal-buttons button:first-child:hover {
+    background: #CBD5E1;
+}
+
+.modal-buttons button:last-child {
+    background: #6366F1;
+    color: white;
+}
+
+.modal-buttons button:last-child:hover {
+    background: #4F46E5;
+}
+
+.modal-buttons button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ===========================
+   Responsive
+=========================== */
+
+@media (max-width: 600px) {
+
+    .modal {
+        width: 90%;
+        padding: 20px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+    }
+
+    .modal-buttons button {
+        width: 100%;
+    }
+
+}

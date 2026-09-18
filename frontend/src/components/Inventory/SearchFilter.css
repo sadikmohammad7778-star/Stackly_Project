@@ -1,0 +1,28 @@
+
+.search-filter{
+  display:flex;
+  gap:15px;
+  margin:25px 0;
+  flex-wrap:wrap;
+}
+
+.search-filter input,
+.search-filter select{
+  padding:10px;
+  border:1px solid #ddd;
+  border-radius:6px;
+  min-width:220px;
+}
+
+.search-filter button{
+  background:#2563eb;
+  color:white;
+  border:none;
+  padding:10px 20px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.search-filter button:hover{
+  background:#1d4ed8;
+}

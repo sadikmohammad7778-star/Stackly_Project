@@ -1,0 +1,7 @@
+id,invoice_number,customer_id,customer_name,sale_date,sales_channel,payment_method,discount,tax,total_amount,status
+32,INV-2026-000024,2,Jodu Sai Kumar,2026-09-09T07:05:56.230853,Online,UPI,0.0,0.0,30000.0,Paid
+31,INV-2026-000023,16,Swarun Gowrishetty,2026-09-09T07:02:33.267939,Online,Card,0.0,0.0,65000.0,Paid
+30,INV-2026-000022,10,Anjali Kumar,2026-09-08T08:19:55.540940,Online,Cash,0.0,0.0,15000.0,Paid
+29,INV-2026-000021,10,Anjali Kumar,2026-09-08T08:17:31.161181,Online,Cash,0.0,0.0,15000.0,Paid
+27,INV-2026-000020,4,Avinash  Pathinti,2026-09-02T07:02:09.188182,Online,UPI,0.0,0.0,30000.0,Paid
+26,INV-2026-000019,4,Avinash  Pathinti,2026-09-02T06:42:52.813606,Store,UPI,0.0,0.0,50.0,Paid

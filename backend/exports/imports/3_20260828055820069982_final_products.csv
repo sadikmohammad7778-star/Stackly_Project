@@ -1,0 +1,4 @@
+name,sku,category,price,stock,brand
+Demo Laptop,DEMO001,Electronics,55000,20,Dell
+Demo Mobile,DEMO002,Mobiles,30000,25,OnePlus
+Demo TV,DEMO003,Electronics,40000,15,Samsung
