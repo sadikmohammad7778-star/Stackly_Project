@@ -20,25 +20,37 @@ class Company(Base):
     )
 
     employees = relationship(
-    "Employee",
-    back_populates="company",
-    cascade="all, delete",
+        "Employee",
+        back_populates="company",
+        cascade="all, delete",
     )
+
     departments = relationship(
-    "Department",
-    back_populates="company",
-    cascade="all, delete"
+        "Department",
+        back_populates="company",
+        cascade="all, delete"
     )
 
     inventories = relationship(
-    "Inventory",
-    back_populates="company",
-    cascade="all, delete"
+        "Inventory",
+        back_populates="company",
+        cascade="all, delete"
     )
 
     customers = relationship(
-    "Customer",
-    back_populates="company",
-    cascade="all, delete",
-   )
+        "Customer",
+        back_populates="company",
+        cascade="all, delete"
+    )
 
+    data_quality_issues = relationship(
+        "DataQualityIssue",
+        back_populates="company",
+        cascade="all, delete"
+    )
+
+    reconciliation_runs = relationship(
+        "ReconciliationRun",
+        back_populates="company",
+        cascade="all, delete"
+    )

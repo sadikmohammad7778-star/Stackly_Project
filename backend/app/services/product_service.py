@@ -7,6 +7,7 @@ from app.models.category import Category
 from app.models.inventory import Inventory
 from app.schemas.product_schema import ProductCreate, ProductUpdate
 from app.services.audit_service import create_audit_log
+from app.services.data_quality_service import DataQualityService
 
 
 def create_product(
@@ -125,6 +126,16 @@ def create_product(
 
         db.commit()
         db.refresh(db_product)
+
+        try:
+            DataQualityService.run_product_lightweight_check(
+                db=db,
+                company_id=company_id,
+                product_id=db_product.id,
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
 
         return db_product
 

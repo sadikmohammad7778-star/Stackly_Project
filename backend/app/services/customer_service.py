@@ -19,6 +19,7 @@ from app.models.customer_timeline import CustomerTimeline
 from app.models.sale import Sale
 from app.services.notification_service import create_notification
 from app.services.audit_service import create_audit_log
+from app.services.data_quality_service import DataQualityService
 
 from app.schemas.customer_schema import (
     CustomerCreate,
@@ -157,6 +158,16 @@ def create_customer(
 
     db.commit()
     db.refresh(new_customer)
+
+    try:
+        DataQualityService.run_customer_lightweight_check(
+            db=db,
+            company_id=company_id,
+            customer_id=new_customer.id,
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
 
     return new_customer
 

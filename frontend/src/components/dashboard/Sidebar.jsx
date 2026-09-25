@@ -13,6 +13,7 @@ import {
   FiSettings,
   FiLogOut,
   FiClock,
+  FiCheckCircle,
 } from "react-icons/fi";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -50,31 +51,34 @@ const menu = [
   },
 
   {
-  name: "Inventory",
-  path: "/inventory",
-  icon: <FiArchive />,
-},
+    name: "Inventory",
+    path: "/inventory",
+    icon: <FiArchive />,
+  },
 
-{
-  name: "Data Import",
-  path: "/data-import",
-  icon: <FiFileText />,
-},
+  {
+    name: "Data Import",
+    path: "/data-import",
+    icon: <FiFileText />,
+  },
 
-{
-  name: "Inventory Forecast",
-  path: "/inventory/forecast",
-  icon: <FiTrendingUp />,
-},
+  {
+    name: "Data Quality",
+    path: "/data-quality",
+    icon: <FiCheckCircle />,
+  },
 
-{
-  name: "Demand Forecast",
-  path: "/forecast",
-  icon: <FiTrendingUp />,
-},
-  // ==========================
-  // Customer Module
-  // ==========================
+  {
+    name: "Inventory Forecast",
+    path: "/inventory/forecast",
+    icon: <FiTrendingUp />,
+  },
+
+  {
+    name: "Demand Forecast",
+    path: "/forecast",
+    icon: <FiTrendingUp />,
+  },
 
   {
     name: "Customers",
@@ -88,10 +92,6 @@ const menu = [
     icon: <FiBarChart2 />,
   },
 
-  // ==========================
-  // Analytics
-  // ==========================
-
   {
     name: "Analytics",
     path: "/analytics",
@@ -104,12 +104,12 @@ const menu = [
     icon: <FiFileText />,
   },
 
-
   {
     name: "Scheduled Reports",
     path: "/scheduled-reports",
     icon: <FiClock />,
   },
+
   {
     name: "Audit Logs",
     path: "/audit",
@@ -137,14 +137,12 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div>
-
         <div className="logo">
           <h2>RetailPulse</h2>
           <span>Analytics</span>
         </div>
 
         <nav>
-
           {menu.map((item) => (
             <NavLink
               key={item.path}
@@ -157,9 +155,7 @@ export default function Sidebar() {
               <span>{item.name}</span>
             </NavLink>
           ))}
-
         </nav>
-
       </div>
 
       <button
@@ -169,7 +165,6 @@ export default function Sidebar() {
         <FiLogOut />
         <span>Logout</span>
       </button>
-
     </aside>
   );
 }

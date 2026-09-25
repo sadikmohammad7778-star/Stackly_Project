@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.services.notification_service import NotificationService
 from app.services.audit_service import create_audit_log
 from app.services.inventory_service import InventoryService
+from app.services.data_quality_service import DataQualityService
 
 from app.models.sale import Sale
 from app.models.sale_item import SaleItem
@@ -561,8 +562,17 @@ def create_sale(
 
         db.refresh(db_sale)
 
-        return db_sale
+        try:
+            DataQualityService.run_sale_lightweight_check(
+                db=db,
+                company_id=company_id,
+                sale_id=db_sale.id,
+            )
+            db.commit()
+        except Exception:
+            db.rollback()
 
+        return db_sale
     except HTTPException:
         db.rollback()
         raise
