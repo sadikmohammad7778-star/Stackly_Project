@@ -27,7 +27,7 @@ from app.models.inventory_movement import InventoryMovement
 from app.models.notification import Notification
 from app.models.demand_forecast import DemandForecast
 from app.models.forecast_history import ForecastHistory
-from app.models.import_history import ImportHistory
+from app.models.data_import import DataImport
 from app.models.import_error import ImportError
 from app.models.report_history import ReportHistory
 from app.models.scheduled_report import ScheduledReport

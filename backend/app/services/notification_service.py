@@ -15,6 +15,7 @@ ROLE_NOTIFICATION_TYPES = {
         "LOW_STOCK",
         "OVERSTOCK",
         "SALES_ALERT",
+        "IMPORT_STARTED",
         "IMPORT_COMPLETED",
         "IMPORT_FAILED",
         "SYSTEM_ALERT",
@@ -24,6 +25,7 @@ ROLE_NOTIFICATION_TYPES = {
         "LOW_STOCK",
         "OVERSTOCK",
         "SALES_ALERT",
+        "IMPORT_STARTED",
         "IMPORT_COMPLETED",
         "IMPORT_FAILED",
         "SYSTEM_ALERT",
@@ -40,7 +42,6 @@ ROLE_NOTIFICATION_TYPES = {
         "OVERSTOCK",
     },
 }
-
 
 class NotificationService:
 

@@ -1,9 +1,5 @@
 import axiosInstance from "./axios";
 
-// ============================================================
-// Upload CSV file
-// ============================================================
-
 export const uploadImport = async (importType, file) => {
   const formData = new FormData();
 
@@ -22,11 +18,6 @@ export const uploadImport = async (importType, file) => {
   return response.data;
 };
 
-
-// ============================================================
-// Validate import
-// ============================================================
-
 export const validateImport = async (importId) => {
   const response = await axiosInstance.post(
     "/imports/validate",
@@ -37,11 +28,6 @@ export const validateImport = async (importId) => {
 
   return response.data;
 };
-
-
-// ============================================================
-// Process import
-// ============================================================
 
 export const processImport = async (importId) => {
   const response = await axiosInstance.post(
@@ -54,10 +40,13 @@ export const processImport = async (importId) => {
   return response.data;
 };
 
+export const getImportStatus = async (importId) => {
+  const response = await axiosInstance.get(
+    `/imports/${importId}/status`
+  );
 
-// ============================================================
-// Import history
-// ============================================================
+  return response.data;
+};
 
 export const getImportHistory = async () => {
   const response = await axiosInstance.get(
@@ -67,11 +56,6 @@ export const getImportHistory = async () => {
   return response.data;
 };
 
-
-// ============================================================
-// Import details
-// ============================================================
-
 export const getImportDetails = async (importId) => {
   const response = await axiosInstance.get(
     `/imports/${importId}`
@@ -80,10 +64,24 @@ export const getImportDetails = async (importId) => {
   return response.data;
 };
 
+export const cancelImport = async (importId) => {
+  const response = await axiosInstance.post(
+    `/imports/${importId}/cancel`
+  );
 
-// ============================================================
-// Download failed records
-// ============================================================
+  return response.data;
+};
+
+export const downloadTemplate = async (importType) => {
+  const response = await axiosInstance.get(
+    `/imports/template/${importType}`,
+    {
+      responseType: "blob",
+    }
+  );
+
+  return response;
+};
 
 export const downloadFailedRecords = async (importId) => {
   const response = await axiosInstance.get(

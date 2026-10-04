@@ -2,10 +2,13 @@ from typing import List
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
+    HTTPException,
     UploadFile,
 )
+from datetime import datetime
 from fastapi.responses import StreamingResponse
 
 from sqlalchemy.orm import Session
@@ -22,24 +25,18 @@ from app.schemas.import_schema import (
     ImportProcessRequest,
     ImportResultResponse,
     ImportHistoryResponse,
+    ImportStatusResponse,
+    ImportCancelResponse,
 )
 
 from app.services import import_service
 
-
-# ============================================================
-# Import Router
-# ============================================================
 
 router = APIRouter(
     prefix="/imports",
     tags=["Imports"],
 )
 
-
-# ============================================================
-# Upload Import File
-# ============================================================
 
 @router.post(
     "/upload",
@@ -60,10 +57,6 @@ def upload_import(
     )
 
 
-# ============================================================
-# Validate Import
-# ============================================================
-
 @router.post(
     "/validate",
     response_model=ImportValidationResponse,
@@ -79,31 +72,65 @@ def validate_import(
         company_id=current_user.company_id,
     )
 
-
-# ============================================================
-# Process Import
-# ============================================================
-
 @router.post(
     "/process",
     response_model=ImportResultResponse,
 )
 def process_import(
     request: ImportProcessRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_company_admin),
 ):
-    return import_service.process_import(
+    import_history = import_service.get_import(
         db=db,
         import_id=request.import_id,
         company_id=current_user.company_id,
-        user_id=current_user.id,
     )
 
+    if import_history.status == "Cancelled":
+        raise HTTPException(
+            status_code=400,
+            detail="This import has been cancelled.",
+        )
 
-# ============================================================
-# Import History
-# ============================================================
+    if import_history.status not in {"Uploaded", "Validated"}:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Import cannot be processed from status '{import_history.status}'.",
+        )
+
+    import_history.status = "Processing"
+    import_history.started_at = datetime.utcnow()
+    import_history.completed_at = None
+    import_history.processed_records = 0
+    import_history.successful_records = 0
+    import_history.failed_records = 0
+    import_history.progress_percentage = 0
+
+    db.commit()
+    db.refresh(import_history)
+
+    background_tasks.add_task(
+        import_service.process_import_background,
+        request.import_id,
+        current_user.company_id,
+        current_user.id,
+    )
+
+    return {
+        "import_id": import_history.id,
+        "status": "Processing",
+        "total_records": import_history.total_records,
+        "valid_records": import_history.valid_records,
+        "successful_records": 0,
+        "failed_records": 0,
+        "duplicate_records": import_history.duplicate_records,
+        "skipped_records": import_history.skipped_records,
+        "processed_records": 0,
+        "progress_percentage": 0,
+        "validation_failures": 0,
+    }
 
 @router.get(
     "/history",
@@ -118,41 +145,51 @@ def get_import_history(
         company_id=current_user.company_id,
     )
 
-
-# ============================================================
-# Download Failed Records
-# ============================================================
-
-@router.get(
-    "/{import_id}/failed-records",
-)
-def download_failed_records(
+@router.get("/{import_id}/status", response_model=ImportStatusResponse)
+def get_import_status(
     import_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_company_admin),
 ):
-    file_bytes, filename = (
-        import_service.download_failed_records(
-            db=db,
-            import_id=import_id,
-            company_id=current_user.company_id,
-        )
+    return import_service.get_import_status(
+        db=db,
+        import_id=import_id,
+        company_id=current_user.company_id,
+    )
+
+
+@router.post(
+    "/{import_id}/cancel",
+    response_model=ImportCancelResponse,
+)
+def cancel_import(
+    import_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_company_admin),
+):
+    return import_service.cancel_import(
+        db=db,
+        import_id=import_id,
+        company_id=current_user.company_id,
+        user_id=current_user.id,
+    )
+
+@router.get("/template/{import_type}")
+def download_import_template(
+    import_type: str,
+):
+    file_bytes, filename = import_service.download_import_template(
+        import_type=import_type,
     )
 
     return StreamingResponse(
         iter([file_bytes]),
         media_type="text/csv",
         headers={
-            "Content-Disposition": (
-                f'attachment; filename="{filename}"'
-            )
+            "Content-Disposition": f'attachment; filename="{filename}"'
         },
     )
 
-
-# ============================================================
-# Import Details
-# ============================================================
 
 @router.get(
     "/{import_id}",
@@ -168,15 +205,25 @@ def get_import_details(
         company_id=current_user.company_id,
     )
 
-@router.post("/{import_id}/process")
-def process_import(
+
+@router.get(
+    "/{import_id}/failed-records",
+)
+def download_failed_records(
     import_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_company_admin),
 ):
-    return import_service.process_import(
+    file_bytes, filename = import_service.download_failed_records(
         db=db,
         import_id=import_id,
         company_id=current_user.company_id,
-        user_id=current_user.id,
+    )
+
+    return StreamingResponse(
+        iter([file_bytes]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        },
     )

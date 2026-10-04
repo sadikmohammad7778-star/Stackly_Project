@@ -1,0 +1,6 @@
+name,sku,category,brand,price,cost_price,stock
+Laptop Pro,LP001,Electronics,Dell,75000,65000,25
+Wireless Mouse,WM001,Accessories,Logitech,1200,800,50
+Keyboard,KB001,Accessories,HP,1800,1200,30
+Monitor 24,MON001,Electronics,Samsung,15000,12000,15
+USB Cable,USB001,Accessories,Portronics,500,250,100

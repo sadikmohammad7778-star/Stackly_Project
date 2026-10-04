@@ -1,0 +1,2 @@
+invoice_number,customer_email,sku,quantity,sales_channel,payment_method
+TASK17-INV-001,task17.customer001@example.com,TASK17-INV-001,2,Online,Cash

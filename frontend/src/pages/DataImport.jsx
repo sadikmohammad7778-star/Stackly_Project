@@ -1,16 +1,35 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
   uploadImport,
   validateImport,
   processImport,
+  getImportStatus,
   getImportHistory,
   getImportDetails,
+  cancelImport,
+  downloadTemplate,
   downloadFailedRecords,
 } from "../api/importApi";
 
 import "./DataImport.css";
+
+const ACTIVE_STATUSES = [
+  "Processing",
+  "Uploaded",
+  "Validated",
+];
+
+const FINAL_STATUSES = [
+  "Completed",
+  "Completed With Errors",
+  "Failed",
+  "Validation Failed",
+  "Cancelled",
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function DataImport() {
   const [importType, setImportType] = useState("products");
@@ -18,37 +37,64 @@ export default function DataImport() {
 
   const [uploadData, setUploadData] = useState(null);
   const [validationData, setValidationData] = useState(null);
+  const [statusData, setStatusData] = useState(null);
   const [resultData, setResultData] = useState(null);
 
   const [history, setHistory] = useState([]);
+  const [details, setDetails] = useState(null);
 
   const [loading, setLoading] = useState(false);
+  const [templateLoading, setTemplateLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [selectedImport, setSelectedImport] = useState(null);
-  const [details, setDetails] = useState(null);
   const [searchParams] = useSearchParams();
 
-  // ============================================================
-  // Load Import History
-  // ============================================================
+  const pollingRef = useRef(null);
+
+  const getErrorMessage = (err, fallback) => {
+    return (
+      err.response?.data?.detail?.message ||
+      err.response?.data?.detail ||
+      err.message ||
+      fallback
+    );
+  };
+
+  const clearPolling = () => {
+    if (pollingRef.current) {
+      clearTimeout(pollingRef.current);
+      pollingRef.current = null;
+    }
+  };
+
+  const resetImportState = () => {
+    setFile(null);
+    setUploadData(null);
+    setValidationData(null);
+    setStatusData(null);
+    setResultData(null);
+    setDetails(null);
+    setError("");
+    clearPolling();
+  };
 
   const loadHistory = async () => {
     try {
       const data = await getImportHistory();
-      setHistory(data);
+      setHistory(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load import history:", err);
+      setError(getErrorMessage(err, "Failed to load import history."));
     }
   };
 
   useEffect(() => {
     loadHistory();
-  }, []);
 
-  // ============================================================
-  // File Selection
-  // ============================================================
+    return () => {
+      clearPolling();
+    };
+  }, []);
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files?.[0];
@@ -56,7 +102,10 @@ export default function DataImport() {
     setError("");
     setUploadData(null);
     setValidationData(null);
+    setStatusData(null);
     setResultData(null);
+    setDetails(null);
+    clearPolling();
 
     if (!selectedFile) {
       setFile(null);
@@ -64,28 +113,21 @@ export default function DataImport() {
     }
 
     if (!selectedFile.name.toLowerCase().endsWith(".csv")) {
-      setError("Only CSV files are allowed.");
       setFile(null);
       event.target.value = "";
+      setError("Only CSV files are allowed.");
       return;
     }
 
-    // 10 MB limit
-    const maxSize = 10 * 1024 * 1024;
-
-    if (selectedFile.size > maxSize) {
-      setError("File size must not exceed 10 MB.");
+    if (selectedFile.size > MAX_FILE_SIZE) {
       setFile(null);
       event.target.value = "";
+      setError("File size must not exceed 10 MB.");
       return;
     }
 
     setFile(selectedFile);
   };
-
-  // ============================================================
-  // Upload
-  // ============================================================
 
   const handleUpload = async () => {
     if (!file) {
@@ -96,37 +138,30 @@ export default function DataImport() {
     try {
       setLoading(true);
       setError("");
+
       setUploadData(null);
       setValidationData(null);
+      setStatusData(null);
       setResultData(null);
+      setDetails(null);
 
-      const data = await uploadImport(
-        importType,
-        file
-      );
+      const data = await uploadImport(importType, file);
 
       setUploadData(data);
 
       await loadHistory();
     } catch (err) {
       console.error("Upload failed:", err);
-
-      setError(
-        err.response?.data?.detail?.message ||
-          err.response?.data?.detail ||
-          "Failed to upload import file."
-      );
+      setError(getErrorMessage(err, "Failed to upload import file."));
     } finally {
       setLoading(false);
     }
   };
 
-  // ============================================================
-  // Validate
-  // ============================================================
-
   const handleValidate = async () => {
-    if (!uploadData?.import_id) {
+    const importId = Number(uploadData?.import_id);
+
+    if (!importId) {
       setError("Please upload the file first.");
       return;
     }
@@ -134,45 +169,115 @@ export default function DataImport() {
     try {
       setLoading(true);
       setError("");
+
       setValidationData(null);
+      setStatusData(null);
       setResultData(null);
 
-      const data = await validateImport(
-        uploadData.import_id
-      );
+      const data = await validateImport(importId);
 
       setValidationData(data);
 
       await loadHistory();
     } catch (err) {
       console.error("Validation failed:", err);
-
-      setError(
-        err.response?.data?.detail ||
-          "Failed to validate import."
-      );
+      setError(getErrorMessage(err, "Failed to validate import."));
     } finally {
       setLoading(false);
     }
   };
 
-  // ============================================================
-  // Process
-  // ============================================================
+  const handleViewDetails = async (importId) => {
+    const id = Number(importId);
+
+    if (!id) {
+      setError("Invalid import ID.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const data = await getImportDetails(id);
+
+      setDetails(data);
+    } catch (err) {
+      console.error("View details failed:", err);
+      setError(
+        getErrorMessage(err, "Failed to load import details.")
+      );
+    }
+  };
+
+  const pollImportStatus = async (importId) => {
+    const id = Number(importId);
+
+    if (!id) {
+      setError("Invalid import ID.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const data = await getImportStatus(id);
+
+      setStatusData(data);
+
+      if (ACTIVE_STATUSES.includes(data.status)) {
+        pollingRef.current = setTimeout(() => {
+          pollImportStatus(id);
+        }, 1000);
+
+        return;
+      }
+
+      clearPolling();
+
+      setResultData(data);
+      setLoading(false);
+
+      await loadHistory();
+
+      if (FINAL_STATUSES.includes(data.status)) {
+        await handleViewDetails(id);
+      }
+    } catch (err) {
+      console.error("Status polling failed:", err);
+
+      clearPolling();
+      setLoading(false);
+
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to track import progress."
+        )
+      );
+    }
+  };
 
   const handleProcess = async () => {
-    if (!uploadData?.import_id) {
+    const importId = Number(uploadData?.import_id);
+
+    if (!importId) {
       setError("Please upload the file first.");
       return;
     }
 
-    if (
-      !validationData ||
-      validationData.invalid_records > 0
-    ) {
+    if (!validationData) {
+      setError("Please validate the import first.");
+      return;
+    }
+
+    if (validationData.invalid_records > 0) {
       setError(
-        "Import cannot be processed until validation passes."
+        "Import cannot be processed because validation failed."
       );
+      return;
+    }
+
+    if (validationData.valid_records === 0) {
+      setError("There are no valid records to import.");
       return;
     }
 
@@ -180,47 +285,221 @@ export default function DataImport() {
       setLoading(true);
       setError("");
       setResultData(null);
+      setDetails(null);
 
-      const data = await processImport(
-        uploadData.import_id
-      );
+      clearPolling();
 
-      setResultData(data);
+      const data = await processImport(importId);
+
+      setStatusData(data);
 
       await loadHistory();
+
+      pollImportStatus(importId);
     } catch (err) {
       console.error("Processing failed:", err);
 
+      setLoading(false);
+
       setError(
-        err.response?.data?.detail ||
-          "Failed to process import."
+        getErrorMessage(err, "Failed to start import.")
+      );
+    }
+  };
+
+  const handleStatus = async (importId) => {
+    const id = Number(importId);
+
+    if (!id) {
+      setError("Invalid import ID.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const data = await getImportStatus(id);
+
+      setStatusData(data);
+
+      if (ACTIVE_STATUSES.includes(data.status)) {
+        setLoading(true);
+
+        clearPolling();
+
+        pollingRef.current = setTimeout(() => {
+          pollImportStatus(id);
+        }, 500);
+
+        return;
+      }
+
+      clearPolling();
+
+      setLoading(false);
+      setResultData(data);
+    } catch (err) {
+      console.error("Status request failed:", err);
+
+      setLoading(false);
+
+      setError(
+        getErrorMessage(err, "Failed to load import status.")
+      );
+    }
+  };
+
+  const handleCancel = async (importId) => {
+    const id = Number(importId);
+
+    if (!id) {
+      setError("Invalid import ID.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      clearPolling();
+
+      await cancelImport(id);
+
+      await loadHistory();
+
+      const data = await getImportStatus(id);
+
+      setStatusData(data);
+      setResultData(data);
+
+      await handleViewDetails(id);
+    } catch (err) {
+      console.error("Cancel failed:", err);
+
+      setError(
+        getErrorMessage(err, "Failed to cancel import.")
       );
     } finally {
       setLoading(false);
     }
   };
 
-  // ============================================================
-  // View Details
-  // ============================================================
-
-  const handleViewDetails = async (importId) => {
+  const handleDownloadTemplate = async () => {
     try {
-      setSelectedImport(importId);
+      setTemplateLoading(true);
+      setError("");
 
-      const data = await getImportDetails(
-        importId
-      );
+      const response = await downloadTemplate(importType);
 
-      setDetails(data);
+      const blob = new Blob([response.data], {
+        type: "text/csv",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `${importType}_import_template.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error(
-        "Failed to load import details:",
-        err
-      );
+      console.error("Template download failed:", err);
 
-      setError("Failed to load import details.");
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to download template."
+        )
+      );
+    } finally {
+      setTemplateLoading(false);
     }
+  };
+
+  const handleDownloadFailedRecords = async (importId) => {
+    const id = Number(importId);
+
+    if (!id) {
+      setError("Invalid import ID.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      const response = await downloadFailedRecords(id);
+
+      const blob = new Blob([response.data], {
+        type: "text/csv",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `import_${id}_failed_records.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download records:", err);
+
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to download failed records."
+        )
+      );
+    }
+  };
+
+  const handleImportTypeChange = (event) => {
+    setImportType(event.target.value);
+
+    setFile(null);
+    setUploadData(null);
+    setValidationData(null);
+    setStatusData(null);
+    setResultData(null);
+    setDetails(null);
+    setError("");
+
+    clearPolling();
+
+    const input = document.getElementById("import-file");
+
+    if (input) {
+      input.value = "";
+    }
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    setUploadData(null);
+    setValidationData(null);
+    setStatusData(null);
+    setResultData(null);
+    setDetails(null);
+    setError("");
+
+    clearPolling();
+
+    const input = document.getElementById("import-file");
+
+    if (input) {
+      input.value = "";
+    }
+  };
+
+  const closeDetails = () => {
+    setDetails(null);
   };
 
   useEffect(() => {
@@ -231,68 +510,18 @@ export default function DataImport() {
     }
   }, [searchParams]);
 
-  
-
-  const handleDownloadFailedRecords = async (importId) => {
-  try {
-    setError("");
-
-    await downloadFailedRecords(
-      importId
-    );
-  } catch (err) {
-    console.error(
-      "Failed to download records:",
-      err
-    );
-
-    setError(
-      err.response?.data?.detail ||
-        "Failed to download failed records."
-    );
-  }
-};
-  // ============================================================
-  // Remove File
-  // ============================================================
-
-  const removeFile = () => {
-    setFile(null);
-    setUploadData(null);
-    setValidationData(null);
-    setResultData(null);
-    setError("");
-
-    const input = document.getElementById(
-      "import-file"
-    );
-
-    if (input) {
-      input.value = "";
-    }
-  };
-
   return (
     <div className="data-import-page">
-
-      {/* ================================================== */}
-      {/* Header */}
-      {/* ================================================== */}
-
       <div className="data-import-header">
         <div>
           <h1>Data Import</h1>
 
           <p>
-            Import Products, Customers and Sales
+            Import Products, Inventory, Customers and Sales
             Transactions into RetailPulse.
           </p>
         </div>
       </div>
-
-      {/* ================================================== */}
-      {/* Error */}
-      {/* ================================================== */}
 
       {error && (
         <div className="import-error">
@@ -300,37 +529,23 @@ export default function DataImport() {
         </div>
       )}
 
-      {/* ================================================== */}
-      {/* Upload Card */}
-      {/* ================================================== */}
-
       <section className="import-card">
-
         <h2>Upload Data</h2>
 
         <div className="import-form">
-
-          {/* Import Type */}
-
           <div className="form-group">
-
-            <label>
-              Import Type
-            </label>
+            <label>Import Type</label>
 
             <select
               value={importType}
-              onChange={(e) => {
-                setImportType(e.target.value);
-                setFile(null);
-                setUploadData(null);
-                setValidationData(null);
-                setResultData(null);
-                setError("");
-              }}
+              onChange={handleImportTypeChange}
             >
               <option value="products">
                 Products
+              </option>
+
+              <option value="inventory">
+                Inventory
               </option>
 
               <option value="customers">
@@ -341,16 +556,10 @@ export default function DataImport() {
                 Sales Transactions
               </option>
             </select>
-
           </div>
 
-          {/* File */}
-
           <div className="form-group">
-
-            <label>
-              CSV File
-            </label>
+            <label>CSV File</label>
 
             <input
               id="import-file"
@@ -358,20 +567,26 @@ export default function DataImport() {
               accept=".csv,text/csv"
               onChange={handleFileChange}
             />
-
           </div>
-
         </div>
 
-        {/* Selected File */}
+        <div className="template-section">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleDownloadTemplate}
+            disabled={templateLoading}
+          >
+            {templateLoading
+              ? "Downloading..."
+              : "Download Template"}
+          </button>
+        </div>
 
         {file && (
           <div className="selected-file">
-
             <div>
-              <strong>
-                Selected file:
-              </strong>{" "}
+              <strong>Selected file:</strong>{" "}
               {file.name}
             </div>
 
@@ -381,13 +596,11 @@ export default function DataImport() {
             >
               Remove
             </button>
-
           </div>
         )}
 
-        {/* Upload Button */}
-
         <button
+          type="button"
           className="primary-button"
           onClick={handleUpload}
           disabled={!file || loading}
@@ -396,22 +609,13 @@ export default function DataImport() {
             ? "Uploading..."
             : "Upload File"}
         </button>
-
       </section>
-
-      {/* ================================================== */}
-      {/* Preview */}
-      {/* ================================================== */}
 
       {uploadData && (
         <section className="import-card">
-
           <div className="section-title">
-
             <div>
-              <h2>
-                CSV Preview
-              </h2>
+              <h2>CSV Preview</h2>
 
               <p>
                 Import ID:{" "}
@@ -424,68 +628,44 @@ export default function DataImport() {
             <span className="record-count">
               {uploadData.total_records} records
             </span>
-
           </div>
-
-          {/* Columns */}
 
           <div className="columns-list">
-
-            {uploadData.columns.map(
-              (column) => (
-                <span key={column}>
-                  {column}
-                </span>
-              )
-            )}
-
+            {uploadData.columns.map((column) => (
+              <span key={column}>
+                {column}
+              </span>
+            ))}
           </div>
 
-          {/* Preview Table */}
-
           <div className="table-wrapper">
-
             <table>
-
               <thead>
                 <tr>
-                  {uploadData.columns.map(
-                    (column) => (
-                      <th key={column}>
-                        {column}
-                      </th>
-                    )
-                  )}
+                  {uploadData.columns.map((column) => (
+                    <th key={column}>
+                      {column}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
               <tbody>
-
-                {uploadData.preview.map(
-                  (row, index) => (
-                    <tr key={index}>
-
-                      {uploadData.columns.map(
-                        (column) => (
-                          <td key={column}>
-                            {row[column]}
-                          </td>
-                        )
-                      )}
-
-                    </tr>
-                  )
-                )}
-
+                {uploadData.preview.map((row, index) => (
+                  <tr key={index}>
+                    {uploadData.columns.map((column) => (
+                      <td key={column}>
+                        {row[column]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
               </tbody>
-
             </table>
-
           </div>
 
-          {/* Validate */}
-
           <button
+            type="button"
             className="primary-button"
             onClick={handleValidate}
             disabled={loading}
@@ -494,23 +674,14 @@ export default function DataImport() {
               ? "Validating..."
               : "Validate Data"}
           </button>
-
         </section>
       )}
 
-      {/* ================================================== */}
-      {/* Validation */}
-      {/* ================================================== */}
-
       {validationData && (
         <section className="import-card">
-
-          <h2>
-            Validation Result
-          </h2>
+          <h2>Validation Result</h2>
 
           <div className="summary-grid">
-
             <div className="summary-box">
               <span>Total Records</span>
               <strong>
@@ -538,22 +709,14 @@ export default function DataImport() {
                 {validationData.duplicate_records}
               </strong>
             </div>
-
           </div>
-
-          {/* Errors */}
 
           {validationData.errors?.length > 0 && (
             <div className="validation-errors">
-
-              <h3>
-                Validation Errors
-              </h3>
+              <h3>Validation Errors</h3>
 
               <div className="table-wrapper">
-
                 <table>
-
                   <thead>
                     <tr>
                       <th>Row</th>
@@ -563,11 +726,9 @@ export default function DataImport() {
                   </thead>
 
                   <tbody>
-
                     {validationData.errors.map(
                       (item, index) => (
                         <tr key={index}>
-
                           <td>
                             {item.row_number}
                           </td>
@@ -579,48 +740,94 @@ export default function DataImport() {
                           <td>
                             {item.error_message}
                           </td>
-
                         </tr>
                       )
                     )}
-
                   </tbody>
-
                 </table>
-
               </div>
-
             </div>
           )}
 
-          {/* Process */}
-
           <button
+            type="button"
             className="primary-button"
             onClick={handleProcess}
             disabled={
               loading ||
-              validationData.invalid_records > 0
+              validationData.invalid_records > 0 ||
+              validationData.valid_records === 0
             }
           >
             {loading
               ? "Processing..."
               : "Import Data"}
           </button>
-
         </section>
       )}
 
-      {/* ================================================== */}
-      {/* Result */}
-      {/* ================================================== */}
+      {statusData && (
+        <section className="import-card">
+          <h2>Import Progress</h2>
+
+          <div className="progress-container">
+            <div className="progress-header">
+              <span>
+                {statusData.status}
+              </span>
+
+              <strong>
+                {statusData.progress_percentage || 0}%
+              </strong>
+            </div>
+
+            <div className="progress-bar">
+              <div
+                className="progress-fill"
+                style={{
+                  width: `${
+                    statusData.progress_percentage || 0
+                  }%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="summary-grid">
+            <div className="summary-box">
+              <span>Total</span>
+              <strong>
+                {statusData.total_records || 0}
+              </strong>
+            </div>
+
+            <div className="summary-box success">
+              <span>Successful</span>
+              <strong>
+                {statusData.successful_records || 0}
+              </strong>
+            </div>
+
+            <div className="summary-box danger">
+              <span>Failed</span>
+              <strong>
+                {statusData.failed_records || 0}
+              </strong>
+            </div>
+
+            <div className="summary-box warning">
+              <span>Skipped</span>
+              <strong>
+                {statusData.skipped_records || 0}
+              </strong>
+            </div>
+          </div>
+        </section>
+      )}
 
       {resultData && (
         <section className="import-card">
-
-          <h2>
-            Import Result
-          </h2>
+          <h2>Import Result</h2>
 
           <div
             className={
@@ -633,52 +840,41 @@ export default function DataImport() {
           </div>
 
           <div className="summary-grid">
-
             <div className="summary-box">
               <span>Total Records</span>
               <strong>
-                {resultData.total_records}
+                {resultData.total_records || 0}
               </strong>
             </div>
 
             <div className="summary-box success">
               <span>Successfully Added</span>
               <strong>
-                {resultData.successful_records}
+                {resultData.successful_records || 0}
               </strong>
             </div>
 
             <div className="summary-box danger">
               <span>Failed</span>
               <strong>
-                {resultData.failed_records}
+                {resultData.failed_records || 0}
               </strong>
             </div>
 
             <div className="summary-box warning">
               <span>Duplicates</span>
               <strong>
-                {resultData.duplicate_records}
+                {resultData.duplicate_records || 0}
               </strong>
             </div>
-
           </div>
-
         </section>
       )}
 
-      {/* ================================================== */}
-      {/* Import History */}
-      {/* ================================================== */}
-
       <section className="import-card">
-
         <div className="section-title">
-
           <div>
-            <h2>
-              Import History
-            </h2>
+            <h2>Import History</h2>
 
             <p>
               Previous import operations
@@ -686,21 +882,19 @@ export default function DataImport() {
           </div>
 
           <button
+            type="button"
             className="secondary-button"
             onClick={loadHistory}
+            disabled={loading}
           >
             Refresh
           </button>
-
         </div>
 
         <div className="table-wrapper">
-
           <table>
-
             <thead>
               <tr>
-
                 <th>ID</th>
                 <th>Type</th>
                 <th>Filename</th>
@@ -710,12 +904,10 @@ export default function DataImport() {
                 <th>Duplicates</th>
                 <th>Status</th>
                 <th>Action</th>
-
               </tr>
             </thead>
 
             <tbody>
-
               {history.length === 0 ? (
                 <tr>
                   <td
@@ -726,227 +918,248 @@ export default function DataImport() {
                   </td>
                 </tr>
               ) : (
-                history.map((item) => (
-                  <tr key={item.id}>
+                history.map((item) => {
+                  const importId = Number(item.id);
 
-                    <td>
-                      #{item.id}
-                    </td>
+                  const canCancel = [
+                    "Uploaded",
+                    "Validated",
+                    "Processing",
+                  ].includes(item.status);
 
-                    <td>
-                      {item.import_type}
-                    </td>
+                  return (
+                    <tr key={importId}>
+                      <td>
+                        #{importId}
+                      </td>
 
-                    <td>
-                      {item.filename}
-                    </td>
+                      <td>
+                        {item.import_type}
+                      </td>
 
-                    <td>
-                      {item.total_records}
-                    </td>
+                      <td>
+                        {item.filename}
+                      </td>
 
-                    <td className="success-text">
-                      {item.successful_records}
-                    </td>
+                      <td>
+                        {item.total_records}
+                      </td>
 
-                    <td className="danger-text">
-                      {item.failed_records}
-                    </td>
+                      <td className="success-text">
+                        {item.successful_records}
+                      </td>
 
-                    <td className="warning-text">
-                      {item.duplicate_records}
-                    </td>
+                      <td className="danger-text">
+                        {item.failed_records}
+                      </td>
 
-                    <td>
-                      <span
-                        className={`status-badge ${item.status
-                          .toLowerCase()
-                          .replace(/\s+/g, "-")}`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
+                      <td className="warning-text">
+                        {item.duplicate_records}
+                      </td>
 
-                    <td>
+                      <td>
+                        <span
+                          className={`status-badge ${item.status
+                            .toLowerCase()
+                            .replace(/\s+/g, "-")}`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
 
-                      <button
-                        className="view-button"
-                        onClick={() =>
-                          handleViewDetails(
-                            item.id
-                          )
-                        }
-                      >
-                        View
-                      </button>
+                      <td>
+                        <button
+                          type="button"
+                          className="view-button"
+                          onClick={() =>
+                            handleViewDetails(importId)
+                          }
+                        >
+                          View
+                        </button>
 
-                    </td>
+                        <button
+                          type="button"
+                          className="view-button"
+                          onClick={() =>
+                            handleStatus(importId)
+                          }
+                        >
+                          Status
+                        </button>
 
-                  </tr>
-                ))
+                        {canCancel && (
+                          <button
+                            type="button"
+                            className="view-button"
+                            onClick={() =>
+                              handleCancel(importId)
+                            }
+                            disabled={loading}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-
             </tbody>
-
           </table>
-
         </div>
-
       </section>
 
-      {/* ================================================== */}
-      {/* Details */}
-      {/* ================================================== */}
-
-      {details &&
-        selectedImport === details.id && (
-          <section className="import-card">
-
-            <div className="section-title">
-
-            <h2>
-                Import #{details.id} Details
-            </h2>
+      {details && (
+        <section className="import-card">
+          <div className="section-title">
+            <div>
+              <h2>
+                Import #{details.import_id} Details
+              </h2>
+            </div>
 
             <div className="details-actions">
-
-                {details.errors?.some(
-                (error) =>
-                    error.error_type === "VALIDATION" ||
-                    error.error_type === "PROCESSING"
-                ) && (
+              {details.errors?.length > 0 && (
                 <button
-                    className="secondary-button"
-                    onClick={() =>
+                  type="button"
+                  className="secondary-button"
+                  onClick={() =>
                     handleDownloadFailedRecords(
-                        details.id
+                      details.import_id
                     )
-                    }
+                  }
                 >
-                    Download Failed Records
+                  Download Failed Records
                 </button>
-                )}
+              )}
 
-                <button
+              <button
+                type="button"
                 className="secondary-button"
-                onClick={() => {
-                    setDetails(null);
-                    setSelectedImport(null);
-                }}
-                >
+                onClick={closeDetails}
+              >
                 Close
-                </button>
+              </button>
+            </div>
+          </div>
 
+          <div className="details-grid">
+            <div>
+              <span>Status</span>
+              <strong>
+                {details.status}
+              </strong>
             </div>
 
-        </div>
-
-            <div className="details-grid">
-
-              <div>
-                <span>Status</span>
-                <strong>
-                  {details.status}
-                </strong>
-              </div>
-
-              <div>
-                <span>Import Type</span>
-                <strong>
-                  {details.import_type}
-                </strong>
-              </div>
-
-              <div>
-                <span>Filename</span>
-                <strong>
-                  {details.filename}
-                </strong>
-              </div>
-
-              <div>
-                <span>Total Records</span>
-                <strong>
-                  {details.total_records}
-                </strong>
-              </div>
-
-              <div>
-                <span>Successful</span>
-                <strong>
-                  {details.successful_records}
-                </strong>
-              </div>
-
-              <div>
-                <span>Failed</span>
-                <strong>
-                  {details.failed_records}
-                </strong>
-              </div>
-
-              <div>
-                <span>Duplicates</span>
-                <strong>
-                  {details.duplicate_records}
-                </strong>
-              </div>
-
+            <div>
+              <span>Import Type</span>
+              <strong>
+                {details.import_type}
+              </strong>
             </div>
 
-            {details.errors?.length > 0 && (
-              <div className="validation-errors">
+            <div>
+              <span>Filename</span>
+              <strong>
+                {details.filename}
+              </strong>
+            </div>
 
-                <h3>
-                  Import Errors
-                </h3>
+            <div>
+              <span>Total Records</span>
+              <strong>
+                {details.total_records}
+              </strong>
+            </div>
 
-                <div className="table-wrapper">
+            <div>
+              <span>Successful</span>
+              <strong>
+                {details.successful_records}
+              </strong>
+            </div>
 
-                  <table>
+            <div>
+              <span>Failed</span>
+              <strong>
+                {details.failed_records}
+              </strong>
+            </div>
 
-                    <thead>
-                      <tr>
-                        <th>Row</th>
-                        <th>Type</th>
-                        <th>Reason</th>
-                      </tr>
-                    </thead>
+            <div>
+              <span>Duplicates</span>
+              <strong>
+                {details.duplicate_records}
+              </strong>
+            </div>
 
-                    <tbody>
+            <div>
+              <span>Skipped</span>
+              <strong>
+                {details.skipped_records}
+              </strong>
+            </div>
 
-                      {details.errors.map(
-                        (error, index) => (
-                          <tr key={index}>
+            <div>
+              <span>Processed</span>
+              <strong>
+                {details.processed_records}
+              </strong>
+            </div>
 
-                            <td>
-                              {error.row_number}
-                            </td>
+            <div>
+              <span>Progress</span>
+              <strong>
+                {details.progress_percentage}%
+              </strong>
+            </div>
+          </div>
 
-                            <td>
-                              {error.error_type}
-                            </td>
+          {details.errors?.length > 0 && (
+            <div className="validation-errors">
+              <h3>Import Errors</h3>
 
-                            <td>
-                              {error.error_message}
-                            </td>
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Row</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
 
-                          </tr>
-                        )
-                      )}
+                  <tbody>
+                    {details.errors.map(
+                      (item, index) => (
+                        <tr key={index}>
+                          <td>
+                            {item.row_number}
+                          </td>
 
-                    </tbody>
+                          <td>
+                            {item.error_type}
+                          </td>
 
-                  </table>
+                          <td>
+                            {item.status}
+                          </td>
 
-                </div>
-
+                          <td>
+                            {item.error_message}
+                          </td>
+                        </tr>
+                      )
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
-
-          </section>
-        )}
-
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }
