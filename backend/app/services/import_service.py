@@ -27,6 +27,7 @@ from app.services.notification_service import NotificationService
 from app.services.audit_service import create_audit_log
 from app.services.data_quality_service import DataQualityService
 
+
 SUPPORTED_IMPORT_TYPES = {
     "products",
     "inventory",
@@ -756,19 +757,8 @@ def validate_inventory_row(
     if not product:
         return False, f"Product with SKU '{sku}' not found."
 
-    inventory = (
-        db.query(Inventory)
-        .filter(
-            Inventory.company_id == company_id,
-            Inventory.product_id == product.id,
-        )
-        .first()
-    )
-
-    if inventory:
-        return True, "DUPLICATE: Inventory already exists for this SKU."
-
     return True, None
+
 
 def validate_sale_row(
     db: Session,
@@ -1194,6 +1184,20 @@ def process_inventory_import(
         try:
             with db.begin_nested():
                 sku = normalize_text(row_data.get("sku"))
+                stock = parse_int(row_data.get("stock"))
+                reorder_level = parse_int(row_data.get("reorder_level"))
+
+                if not sku:
+                    raise ValueError("SKU is required.")
+
+                if stock is None:
+                    raise ValueError("Stock must be a valid integer.")
+
+                if stock < 0:
+                    raise ValueError("Stock cannot be negative.")
+
+                if reorder_level is None:
+                    reorder_level = 10
 
                 existing_product = (
                     db.query(Product)
@@ -1205,7 +1209,9 @@ def process_inventory_import(
                 )
 
                 if not existing_product:
-                    raise ValueError(f"Product with SKU '{sku}' not found.")
+                    raise ValueError(
+                        f"Product with SKU '{sku}' not found."
+                    )
 
                 existing_inventory = (
                     db.query(Inventory)
@@ -1217,45 +1223,84 @@ def process_inventory_import(
                 )
 
                 if existing_inventory:
-                    duplicates += 1
-                    processed += 1
-                    continue
+                    previous_stock = existing_inventory.current_stock
+                    quantity_changed = stock - previous_stock
 
-                product, stock, reorder_level, status = validate_inventory_import_row(
-                    db=db,
-                    row=row_data,
-                    company_id=company_id,
-                )
+                    existing_inventory.current_stock = stock
+                    existing_inventory.available_stock = (
+                        stock - existing_inventory.reserved_stock
+                    )
 
-                inventory = Inventory(
-                    company_id=company_id,
-                    product_id=product.id,
-                    current_stock=stock,
-                    reserved_stock=0,
-                    available_stock=stock,
-                    reorder_level=reorder_level,
-                    stock_status=status,
-                )
+                    if existing_inventory.available_stock < 0:
+                        existing_inventory.available_stock = 0
 
-                db.add(inventory)
+                    existing_inventory.reorder_level = reorder_level
 
-                product.stock_quantity = stock
-                product.status = status
+                    if stock == 0:
+                        status = "Out of Stock"
+                    elif stock <= reorder_level:
+                        status = "Low Stock"
+                    else:
+                        status = "In Stock"
 
-                movement = InventoryMovement(
-                    inventory_id=inventory.id if inventory.id else None,
-                    movement_type="IN",
-                    quantity_changed=stock,
-                    previous_quantity=0,
-                    updated_quantity=stock,
-                    reason="Imported Inventory",
-                    remarks=f"Inventory imported for SKU {sku}.",
-                    performed_by=user_id,
-                )
+                    existing_inventory.stock_status = status
 
-                db.flush()
-                movement.inventory_id = inventory.id
-                db.add(movement)
+                    existing_product.stock_quantity = stock
+                    existing_product.status = status
+
+                    db.flush()
+
+                    movement = InventoryMovement(
+                        inventory_id=existing_inventory.id,
+                        movement_type="IN" if quantity_changed >= 0 else "OUT",
+                        quantity_changed=quantity_changed,
+                        previous_quantity=previous_stock,
+                        updated_quantity=stock,
+                        reason="Imported Inventory",
+                        remarks=f"Inventory imported for SKU {sku}.",
+                        performed_by=user_id,
+                    )
+
+                    db.add(movement)
+
+                else:
+                    product, stock, reorder_level, status = (
+                        validate_inventory_import_row(
+                            db=db,
+                            row=row_data,
+                            company_id=company_id,
+                        )
+                    )
+
+                    inventory = Inventory(
+                        company_id=company_id,
+                        product_id=product.id,
+                        current_stock=stock,
+                        reserved_stock=0,
+                        available_stock=stock,
+                        reorder_level=reorder_level,
+                        stock_status=status,
+                    )
+
+                    db.add(inventory)
+
+                    product.stock_quantity = stock
+                    product.status = status
+
+                    db.flush()
+
+                    movement = InventoryMovement(
+                        inventory_id=inventory.id,
+                        movement_type="IN",
+                        quantity_changed=stock,
+                        previous_quantity=0,
+                        updated_quantity=stock,
+                        reason="Imported Inventory",
+                        remarks=f"Inventory imported for SKU {sku}.",
+                        performed_by=user_id,
+                    )
+
+                    db.add(movement)
 
             successful += 1
 
@@ -1271,6 +1316,7 @@ def process_inventory_import(
             )
 
         processed += 1
+
         update_import_progress(
             db=db,
             import_id=import_id,
@@ -1282,6 +1328,7 @@ def process_inventory_import(
         )
 
     return successful, failed, duplicates
+
 
 def process_product_import(
     db: Session,

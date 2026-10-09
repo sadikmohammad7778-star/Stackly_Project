@@ -54,3 +54,22 @@ class Company(Base):
         back_populates="company",
         cascade="all, delete"
     )
+
+
+    approval_requests = relationship(
+        "ApprovalRequest",
+        back_populates="company",
+        cascade="all, delete"
+    )
+
+    approval_histories = relationship(
+        "ApprovalHistory",
+        back_populates="company",
+        cascade="all, delete"
+    )
+
+    workflow_configurations = relationship(
+        "WorkflowConfiguration",
+        back_populates="company",
+        cascade="all, delete"
+    )

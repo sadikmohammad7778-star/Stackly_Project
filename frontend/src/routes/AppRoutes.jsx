@@ -35,6 +35,7 @@ import Reports from "../pages/Reports";
 import Analytics from "../pages/Analytics";
 import AuditLogs from "../pages/AuditLogs";
 import ScheduledReports from "../pages/ScheduledReports";
+import Workflow from "../pages/Workflow";
 
 import Settings from "../pages/Settings";
 
@@ -102,6 +103,11 @@ export default function AppRoutes() {
           <Route
             path="/data-quality"
             element={<DataQuality />}
+          />
+
+          <Route
+            path="/workflow"
+            element={<Workflow />}
           />
 
           <Route

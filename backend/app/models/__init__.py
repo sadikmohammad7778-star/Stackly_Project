@@ -6,3 +6,6 @@ from .import_error import ImportError
 from .report_history import ReportHistory
 from .scheduled_report import ScheduledReport
 from .data_quality import DataQualityIssue, ReconciliationRun
+from .approval_request import ApprovalRequest
+from .approval_history import ApprovalHistory
+from .workflow_config import WorkflowConfiguration

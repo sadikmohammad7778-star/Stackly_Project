@@ -13,6 +13,11 @@ import {
   downloadFailedRecords,
 } from "../api/importApi";
 
+import {
+  createApprovalRequest,
+  submitApprovalRequest,
+} from "../api/workflowApi";
+
 import "./DataImport.css";
 
 const ACTIVE_STATUSES = [
@@ -84,7 +89,12 @@ export default function DataImport() {
       setHistory(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load import history:", err);
-      setError(getErrorMessage(err, "Failed to load import history."));
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to load import history."
+        )
+      );
     }
   };
 
@@ -152,7 +162,12 @@ export default function DataImport() {
       await loadHistory();
     } catch (err) {
       console.error("Upload failed:", err);
-      setError(getErrorMessage(err, "Failed to upload import file."));
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to upload import file."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -181,7 +196,12 @@ export default function DataImport() {
       await loadHistory();
     } catch (err) {
       console.error("Validation failed:", err);
-      setError(getErrorMessage(err, "Failed to validate import."));
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to validate import."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -204,7 +224,10 @@ export default function DataImport() {
     } catch (err) {
       console.error("View details failed:", err);
       setError(
-        getErrorMessage(err, "Failed to load import details.")
+        getErrorMessage(
+          err,
+          "Failed to load import details."
+        )
       );
     }
   };
@@ -256,6 +279,99 @@ export default function DataImport() {
     }
   };
 
+  const handleCreateInventoryApproval = async () => {
+    const importId = Number(uploadData?.import_id);
+
+    if (!importId) {
+      setError("Please upload the file first.");
+      return;
+    }
+
+    if (!validationData) {
+      setError("Please validate the import first.");
+      return;
+    }
+
+    if (validationData.invalid_records > 0) {
+      setError(
+        "Approval request cannot be created because validation failed."
+      );
+      return;
+    }
+
+    if (validationData.valid_records === 0) {
+      setError("There are no valid records to approve.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setResultData(null);
+      setDetails(null);
+
+      const user = JSON.parse(
+        localStorage.getItem("user") || "null"
+      );
+
+      const companyId = user?.company_id;
+
+      if (!companyId) {
+        setError(
+          "Company information is missing. Please login again."
+        );
+        return;
+      }
+
+      const data = await createApprovalRequest({
+        company_id: companyId,
+        request_type: "inventory_import",
+        related_entity_type: "import",
+        related_entity_id: importId,
+        requested_changes: {
+          import_id: importId,
+        },
+        reason:
+          "Inventory import approval requested from frontend.",
+        priority: "medium",
+      });
+
+      await submitApprovalRequest(data.id, {
+        comments:
+          "Please review and approve the inventory import.",
+      });
+
+      setResultData({
+        status: "Pending Approval",
+        total_records: validationData.total_records,
+        successful_records: 0,
+        failed_records: 0,
+        duplicate_records:
+          validationData.duplicate_records || 0,
+      });
+
+      await loadHistory();
+
+      alert(
+        `Approval request #${data.id} submitted successfully.`
+      );
+    } catch (err) {
+      console.error(
+        "Inventory approval request failed:",
+        err
+      );
+
+      setError(
+        getErrorMessage(
+          err,
+          "Failed to create inventory approval request."
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProcess = async () => {
     const importId = Number(uploadData?.import_id);
 
@@ -281,6 +397,11 @@ export default function DataImport() {
       return;
     }
 
+    if (importType === "inventory") {
+      await handleCreateInventoryApproval();
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -302,49 +423,10 @@ export default function DataImport() {
       setLoading(false);
 
       setError(
-        getErrorMessage(err, "Failed to start import.")
-      );
-    }
-  };
-
-  const handleStatus = async (importId) => {
-    const id = Number(importId);
-
-    if (!id) {
-      setError("Invalid import ID.");
-      return;
-    }
-
-    try {
-      setError("");
-
-      const data = await getImportStatus(id);
-
-      setStatusData(data);
-
-      if (ACTIVE_STATUSES.includes(data.status)) {
-        setLoading(true);
-
-        clearPolling();
-
-        pollingRef.current = setTimeout(() => {
-          pollImportStatus(id);
-        }, 500);
-
-        return;
-      }
-
-      clearPolling();
-
-      setLoading(false);
-      setResultData(data);
-    } catch (err) {
-      console.error("Status request failed:", err);
-
-      setLoading(false);
-
-      setError(
-        getErrorMessage(err, "Failed to load import status.")
+        getErrorMessage(
+          err,
+          "Failed to start import."
+        )
       );
     }
   };
@@ -377,7 +459,10 @@ export default function DataImport() {
       console.error("Cancel failed:", err);
 
       setError(
-        getErrorMessage(err, "Failed to cancel import.")
+        getErrorMessage(
+          err,
+          "Failed to cancel import."
+        )
       );
     } finally {
       setLoading(false);
@@ -407,7 +492,10 @@ export default function DataImport() {
 
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Template download failed:", err);
+      console.error(
+        "Template download failed:",
+        err
+      );
 
       setError(
         getErrorMessage(
@@ -431,17 +519,22 @@ export default function DataImport() {
     try {
       setError("");
 
-      const response = await downloadFailedRecords(id);
+      const response =
+        await downloadFailedRecords(id);
 
       const blob = new Blob([response.data], {
         type: "text/csv",
       });
 
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const url =
+        window.URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
 
       link.href = url;
-      link.download = `import_${id}_failed_records.csv`;
+      link.download =
+        `import_${id}_failed_records.csv`;
 
       document.body.appendChild(link);
       link.click();
@@ -449,7 +542,10 @@ export default function DataImport() {
 
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Failed to download records:", err);
+      console.error(
+        "Failed to download records:",
+        err
+      );
 
       setError(
         getErrorMessage(
@@ -473,7 +569,8 @@ export default function DataImport() {
 
     clearPolling();
 
-    const input = document.getElementById("import-file");
+    const input =
+      document.getElementById("import-file");
 
     if (input) {
       input.value = "";
@@ -491,7 +588,8 @@ export default function DataImport() {
 
     clearPolling();
 
-    const input = document.getElementById("import-file");
+    const input =
+      document.getElementById("import-file");
 
     if (input) {
       input.value = "";
@@ -503,7 +601,8 @@ export default function DataImport() {
   };
 
   useEffect(() => {
-    const importId = searchParams.get("import_id");
+    const importId =
+      searchParams.get("import_id");
 
     if (importId) {
       handleViewDetails(Number(importId));
@@ -631,35 +730,43 @@ export default function DataImport() {
           </div>
 
           <div className="columns-list">
-            {uploadData.columns.map((column) => (
-              <span key={column}>
-                {column}
-              </span>
-            ))}
+            {uploadData.columns.map(
+              (column) => (
+                <span key={column}>
+                  {column}
+                </span>
+              )
+            )}
           </div>
 
           <div className="table-wrapper">
             <table>
               <thead>
                 <tr>
-                  {uploadData.columns.map((column) => (
-                    <th key={column}>
-                      {column}
-                    </th>
-                  ))}
+                  {uploadData.columns.map(
+                    (column) => (
+                      <th key={column}>
+                        {column}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
 
               <tbody>
-                {uploadData.preview.map((row, index) => (
-                  <tr key={index}>
-                    {uploadData.columns.map((column) => (
-                      <td key={column}>
-                        {row[column]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {uploadData.preview.map(
+                  (row, index) => (
+                    <tr key={index}>
+                      {uploadData.columns.map(
+                        (column) => (
+                          <td key={column}>
+                            {row[column]}
+                          </td>
+                        )
+                      )}
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -684,6 +791,7 @@ export default function DataImport() {
           <div className="summary-grid">
             <div className="summary-box">
               <span>Total Records</span>
+
               <strong>
                 {validationData.total_records}
               </strong>
@@ -691,6 +799,7 @@ export default function DataImport() {
 
             <div className="summary-box success">
               <span>Valid Records</span>
+
               <strong>
                 {validationData.valid_records}
               </strong>
@@ -698,6 +807,7 @@ export default function DataImport() {
 
             <div className="summary-box danger">
               <span>Invalid Records</span>
+
               <strong>
                 {validationData.invalid_records}
               </strong>
@@ -705,6 +815,7 @@ export default function DataImport() {
 
             <div className="summary-box warning">
               <span>Duplicates</span>
+
               <strong>
                 {validationData.duplicate_records}
               </strong>
@@ -760,8 +871,12 @@ export default function DataImport() {
             }
           >
             {loading
-              ? "Processing..."
-              : "Import Data"}
+              ? importType === "inventory"
+                ? "Creating Approval..."
+                : "Processing..."
+              : importType === "inventory"
+                ? "Send for Approval"
+                : "Import Data"}
           </button>
         </section>
       )}
@@ -796,6 +911,7 @@ export default function DataImport() {
           <div className="summary-grid">
             <div className="summary-box">
               <span>Total</span>
+
               <strong>
                 {statusData.total_records || 0}
               </strong>
@@ -803,6 +919,7 @@ export default function DataImport() {
 
             <div className="summary-box success">
               <span>Successful</span>
+
               <strong>
                 {statusData.successful_records || 0}
               </strong>
@@ -810,6 +927,7 @@ export default function DataImport() {
 
             <div className="summary-box danger">
               <span>Failed</span>
+
               <strong>
                 {statusData.failed_records || 0}
               </strong>
@@ -817,6 +935,7 @@ export default function DataImport() {
 
             <div className="summary-box warning">
               <span>Skipped</span>
+
               <strong>
                 {statusData.skipped_records || 0}
               </strong>
@@ -842,6 +961,7 @@ export default function DataImport() {
           <div className="summary-grid">
             <div className="summary-box">
               <span>Total Records</span>
+
               <strong>
                 {resultData.total_records || 0}
               </strong>
@@ -849,6 +969,7 @@ export default function DataImport() {
 
             <div className="summary-box success">
               <span>Successfully Added</span>
+
               <strong>
                 {resultData.successful_records || 0}
               </strong>
@@ -856,6 +977,7 @@ export default function DataImport() {
 
             <div className="summary-box danger">
               <span>Failed</span>
+
               <strong>
                 {resultData.failed_records || 0}
               </strong>
@@ -863,6 +985,7 @@ export default function DataImport() {
 
             <div className="summary-box warning">
               <span>Duplicates</span>
+
               <strong>
                 {resultData.duplicate_records || 0}
               </strong>
@@ -1047,6 +1170,7 @@ export default function DataImport() {
           <div className="details-grid">
             <div>
               <span>Status</span>
+
               <strong>
                 {details.status}
               </strong>
@@ -1054,6 +1178,7 @@ export default function DataImport() {
 
             <div>
               <span>Import Type</span>
+
               <strong>
                 {details.import_type}
               </strong>
@@ -1061,6 +1186,7 @@ export default function DataImport() {
 
             <div>
               <span>Filename</span>
+
               <strong>
                 {details.filename}
               </strong>
@@ -1068,6 +1194,7 @@ export default function DataImport() {
 
             <div>
               <span>Total Records</span>
+
               <strong>
                 {details.total_records}
               </strong>
@@ -1075,6 +1202,7 @@ export default function DataImport() {
 
             <div>
               <span>Successful</span>
+
               <strong>
                 {details.successful_records}
               </strong>
@@ -1082,6 +1210,7 @@ export default function DataImport() {
 
             <div>
               <span>Failed</span>
+
               <strong>
                 {details.failed_records}
               </strong>
@@ -1089,6 +1218,7 @@ export default function DataImport() {
 
             <div>
               <span>Duplicates</span>
+
               <strong>
                 {details.duplicate_records}
               </strong>
@@ -1096,6 +1226,7 @@ export default function DataImport() {
 
             <div>
               <span>Skipped</span>
+
               <strong>
                 {details.skipped_records}
               </strong>
@@ -1103,6 +1234,7 @@ export default function DataImport() {
 
             <div>
               <span>Processed</span>
+
               <strong>
                 {details.processed_records}
               </strong>
@@ -1110,6 +1242,7 @@ export default function DataImport() {
 
             <div>
               <span>Progress</span>
+
               <strong>
                 {details.progress_percentage}%
               </strong>

@@ -32,6 +32,9 @@ from app.models.import_error import ImportError
 from app.models.report_history import ReportHistory
 from app.models.scheduled_report import ScheduledReport
 from app.models.data_quality import DataQualityIssue, ReconciliationRun
+from app.models.approval_request import ApprovalRequest
+from app.models.approval_history import ApprovalHistory
+from app.models.workflow_config import WorkflowConfiguration
 
 
 from app.routes.company_routes import router as company_router
@@ -59,6 +62,8 @@ from app.routes.scheduled_report_routes import router as scheduled_report_router
 from app.services.report_scheduler_service import scheduled_report_worker
 
 from app.routes.data_quality_routes import router as data_quality_router
+
+from app.routes.workflow_routes import router as workflow_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -117,6 +122,7 @@ app.include_router(inventory_forecasting_router)
 app.include_router(import_router)
 app.include_router(scheduled_report_router)
 app.include_router(data_quality_router)
+app.include_router(workflow_router)
 
 
 @app.get("/routes")

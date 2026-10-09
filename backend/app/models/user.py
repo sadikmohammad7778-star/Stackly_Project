@@ -51,3 +51,26 @@ class User(Base):
         back_populates="user",
         cascade="all, delete"
     )
+
+    submitted_approval_requests = relationship(
+        "ApprovalRequest",
+        foreign_keys="ApprovalRequest.requested_by",
+        back_populates="requester"
+    )
+
+    assigned_approval_requests = relationship(
+        "ApprovalRequest",
+        foreign_keys="ApprovalRequest.assigned_approver_id",
+        back_populates="assigned_approver"
+    )
+
+    approval_history = relationship(
+        "ApprovalHistory",
+        back_populates="user"
+    )
+
+    created_workflow_configurations = relationship(
+        "WorkflowConfiguration",
+        foreign_keys="WorkflowConfiguration.created_by",
+        back_populates="creator"
+    )
