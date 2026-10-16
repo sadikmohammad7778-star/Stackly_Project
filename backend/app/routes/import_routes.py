@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 
 from fastapi import (
     APIRouter,
@@ -8,14 +9,11 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
-from datetime import datetime
 from fastapi.responses import StreamingResponse
-
 from sqlalchemy.orm import Session
 
 from app.config.dependency import get_db
 from app.security.role_dependency import require_company_admin
-
 from app.models.user import User
 
 from app.schemas.import_schema import (
@@ -29,6 +27,7 @@ from app.schemas.import_schema import (
     ImportCancelResponse,
 )
 
+from app.services.background_job_service import create_job
 from app.services import import_service
 
 
@@ -72,6 +71,7 @@ def validate_import(
         company_id=current_user.company_id,
     )
 
+
 @router.post(
     "/process",
     response_model=ImportResultResponse,
@@ -97,8 +97,18 @@ def process_import(
     if import_history.status not in {"Uploaded", "Validated"}:
         raise HTTPException(
             status_code=400,
-            detail=f"Import cannot be processed from status '{import_history.status}'.",
+            detail=(
+                f"Import cannot be processed from status "
+                f"'{import_history.status}'."
+            ),
         )
+
+    job = create_job(
+        db=db,
+        job_type="import",
+        company_id=current_user.company_id,
+        triggered_by=current_user.id,
+    )
 
     import_history.status = "Processing"
     import_history.started_at = datetime.utcnow()
@@ -108,14 +118,20 @@ def process_import(
     import_history.failed_records = 0
     import_history.progress_percentage = 0
 
-    db.commit()
-    db.refresh(import_history)
+    try:
+        db.commit()
+        db.refresh(import_history)
+        db.refresh(job)
+    except Exception:
+        db.rollback()
+        raise
 
     background_tasks.add_task(
         import_service.process_import_background,
         request.import_id,
         current_user.company_id,
         current_user.id,
+        job.id,
     )
 
     return {
@@ -132,6 +148,7 @@ def process_import(
         "validation_failures": 0,
     }
 
+
 @router.get(
     "/history",
     response_model=List[ImportHistoryResponse],
@@ -145,7 +162,11 @@ def get_import_history(
         company_id=current_user.company_id,
     )
 
-@router.get("/{import_id}/status", response_model=ImportStatusResponse)
+
+@router.get(
+    "/{import_id}/status",
+    response_model=ImportStatusResponse,
+)
 def get_import_status(
     import_id: int,
     db: Session = Depends(get_db),
@@ -174,6 +195,7 @@ def cancel_import(
         user_id=current_user.id,
     )
 
+
 @router.get("/template/{import_type}")
 def download_import_template(
     import_type: str,
@@ -191,9 +213,7 @@ def download_import_template(
     )
 
 
-@router.get(
-    "/{import_id}",
-)
+@router.get("/{import_id}")
 def get_import_details(
     import_id: int,
     db: Session = Depends(get_db),
@@ -206,9 +226,7 @@ def get_import_details(
     )
 
 
-@router.get(
-    "/{import_id}/failed-records",
-)
+@router.get("/{import_id}/failed-records")
 def download_failed_records(
     import_id: int,
     db: Session = Depends(get_db),

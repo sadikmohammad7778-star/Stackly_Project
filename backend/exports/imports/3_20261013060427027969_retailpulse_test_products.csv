@@ -1,0 +1,6 @@
+sku,name,category,brand,price,cost_price,stock,reorder_level,description
+RP-TEST-001,Wireless Mouse,Electronics,Logitech,599.0,350.0,50,10,USB wireless mouse
+RP-TEST-002,USB Keyboard,Electronics,HP,899.0,550.0,35,8,Standard USB keyboard
+RP-TEST-003,Notebook A5,Stationery,Classmate,60.0,35.0,100,20,A5 ruled notebook
+RP-TEST-004,Ball Pen Blue,Stationery,Cello,15.0,8.0,200,30,Blue ink ball pen
+RP-TEST-005,Water Bottle 1L,Home & Kitchen,Milton,249.0,140.0,40,10,Reusable one litre water bottle

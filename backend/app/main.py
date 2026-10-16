@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -6,6 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 load_dotenv()
+
+from app.middleware.performance_monitoring import (
+    PerformanceMonitoringMiddleware,
+)
 
 from app.config.database import engine, Base
 from app.config.exceptions import global_exception_handler
@@ -35,6 +40,8 @@ from app.models.data_quality import DataQualityIssue, ReconciliationRun
 from app.models.approval_request import ApprovalRequest
 from app.models.approval_history import ApprovalHistory
 from app.models.workflow_config import WorkflowConfiguration
+from app.models.background_job import BackgroundJob
+from app.routes.background_job_routes import router as background_job_router
 
 
 from app.routes.company_routes import router as company_router
@@ -68,16 +75,30 @@ from app.routes.workflow_routes import router as workflow_router
 Base.metadata.create_all(bind=engine)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler_task = asyncio.create_task(
+        scheduled_report_worker(),
+        name="scheduled_report_worker",
+    )
+    app.state.scheduler_task = scheduler_task
+
+    try:
+        yield
+    finally:
+        scheduler_task.cancel()
+
+        try:
+            await scheduler_task
+        except asyncio.CancelledError:
+            pass
+
+
 app = FastAPI(
     title="RetailPulse Analytics API",
     version="1.0.0",
+    lifespan=lifespan,
 )
-
-
-@app.on_event("startup")
-async def start_report_scheduler():
-    asyncio.create_task(scheduled_report_worker())
-
 
 app.add_exception_handler(
     Exception,
@@ -91,6 +112,7 @@ origins = [
 ]
 
 
+app.add_middleware(PerformanceMonitoringMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -123,6 +145,7 @@ app.include_router(import_router)
 app.include_router(scheduled_report_router)
 app.include_router(data_quality_router)
 app.include_router(workflow_router)
+app.include_router(background_job_router)
 
 
 @app.get("/routes")

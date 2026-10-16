@@ -14,6 +14,7 @@ import {
   FiLogOut,
   FiClock,
   FiCheckCircle,
+  FiActivity,
 } from "react-icons/fi";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -114,6 +115,12 @@ const menu = [
     name: "Audit Logs",
     path: "/audit",
     icon: <FiShield />,
+  },
+
+  {
+    name: "System Health",
+    path: "/system-health",
+    icon: <FiActivity />,
   },
 
   {

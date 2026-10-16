@@ -2694,20 +2694,87 @@ def process_import_background(
     import_id: int,
     company_id: int,
     user_id: int,
+    job_id: int = None,
 ):
     from app.config.database import SessionLocal
+    from app.services.background_job_service import (
+        start_job,
+        complete_job,
+        fail_job,
+    )
 
     db = SessionLocal()
 
     try:
-        process_import(
+        if job_id is not None:
+            job = start_job(db, job_id)
+
+            if job is None or job.status != "Running":
+                return
+
+        result = process_import(
             db=db,
             import_id=import_id,
             company_id=company_id,
             user_id=user_id,
         )
-    except Exception:
+
+        import_status = result.get("status", "Failed")
+
+        if job_id is not None:
+            if import_status in {
+                "Failed",
+                "Validation Failed",
+                "Completed With Errors",
+            }:
+                fail_job(
+                    db=db,
+                    job_id=job_id,
+                    error_message=f"Import finished with status: {import_status}",
+                )
+            elif import_status == "Completed":
+                complete_job(
+                    db=db,
+                    job_id=job_id,
+                )
+            else:
+                fail_job(
+                    db=db,
+                    job_id=job_id,
+                    error_message=f"Unexpected import status: {import_status}",
+                )
+
+    except Exception as exc:
         db.rollback()
-        raise
+
+        if job_id is not None:
+            try:
+                fail_job(
+                    db=db,
+                    job_id=job_id,
+                    error_message=str(exc)[:2000],
+                )
+            except Exception:
+                db.rollback()
+
+        import_history = (
+            db.query(ImportHistory)
+            .filter(
+                ImportHistory.id == import_id,
+                ImportHistory.company_id == company_id,
+            )
+            .first()
+        )
+
+        if import_history:
+            import_history.status = "Failed"
+            import_history.error_message = str(exc)[:2000]
+            import_history.completed_at = datetime.utcnow()
+
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+
     finally:
         db.close()

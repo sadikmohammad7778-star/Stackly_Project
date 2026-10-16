@@ -36,6 +36,7 @@ import Analytics from "../pages/Analytics";
 import AuditLogs from "../pages/AuditLogs";
 import ScheduledReports from "../pages/ScheduledReports";
 import Workflow from "../pages/Workflow";
+import SystemHealth from "../pages/SystemHealth";
 
 import Settings from "../pages/Settings";
 
@@ -163,6 +164,11 @@ export default function AppRoutes() {
           <Route
             path="/analytics"
             element={<Analytics />}
+          />
+
+          <Route
+            path="/system-health"
+            element={<SystemHealth />}
           />
 
           <Route
