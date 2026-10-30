@@ -65,12 +65,15 @@ from app.routes.demand_forecast_routes import router as demand_forecast_router
 from app.routes.inventory_forecasting_routes import router as inventory_forecasting_router
 from app.routes.import_routes import router as import_router
 from app.routes.scheduled_report_routes import router as scheduled_report_router
+from app.routes.data_governance_routes import router as data_governance_router
+
 
 from app.services.report_scheduler_service import scheduled_report_worker
 
 from app.routes.data_quality_routes import router as data_quality_router
 
 from app.routes.workflow_routes import router as workflow_router
+from app.routes.access_request_routes import router as access_request_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -146,6 +149,8 @@ app.include_router(scheduled_report_router)
 app.include_router(data_quality_router)
 app.include_router(workflow_router)
 app.include_router(background_job_router)
+app.include_router(data_governance_router)
+app.include_router(access_request_router)
 
 
 @app.get("/routes")

@@ -11,7 +11,6 @@ import DashboardLayout from "../layouts/DashboardLayout";
 
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
-
 import Dashboard from "../pages/Dashboard";
 
 import Customers from "../pages/Customers";
@@ -26,6 +25,7 @@ import Inventory from "../pages/Inventory";
 import Employees from "../pages/Employees";
 import Departments from "../pages/Departments";
 import Attendance from "../pages/Attendance";
+
 import DemandForecast from "../pages/DemandForecast";
 import InventoryForecast from "../pages/InventoryForecast";
 import DataImport from "../pages/DataImport";
@@ -37,7 +37,8 @@ import AuditLogs from "../pages/AuditLogs";
 import ScheduledReports from "../pages/ScheduledReports";
 import Workflow from "../pages/Workflow";
 import SystemHealth from "../pages/SystemHealth";
-
+import DataGovernance from "../pages/DataGovernance";
+import EmployeeAccessRequests from "../pages/EmployeeAccessRequests";
 import Settings from "../pages/Settings";
 
 export default function AppRoutes() {
@@ -169,6 +170,20 @@ export default function AppRoutes() {
           <Route
             path="/system-health"
             element={<SystemHealth />}
+          />
+
+          <Route
+            path="/data-governance"
+            element={
+              <AdminRoute>
+                <DataGovernance />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/access-requests"
+            element={<EmployeeAccessRequests />}
           />
 
           <Route

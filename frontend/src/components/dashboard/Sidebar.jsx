@@ -124,6 +124,12 @@ const menu = [
   },
 
   {
+    name: "Data Governance",
+    path: "/data-governance",
+    icon: <FiShield />,
+  },
+
+  {
     name: "Settings",
     path: "/settings",
     icon: <FiSettings />,
