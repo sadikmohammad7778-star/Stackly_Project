@@ -15,6 +15,7 @@ import {
   FiClock,
   FiCheckCircle,
   FiActivity,
+  FiDatabase
 } from "react-icons/fi";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -127,6 +128,12 @@ const menu = [
     name: "Data Governance",
     path: "/data-governance",
     icon: <FiShield />,
+  },
+
+  {
+    name: "Integrations",
+    path: "/integrations",
+    icon: <FiDatabase />,
   },
 
   {

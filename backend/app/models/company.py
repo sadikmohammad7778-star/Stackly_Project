@@ -73,3 +73,10 @@ class Company(Base):
         back_populates="company",
         cascade="all, delete"
     )
+
+
+    integrations = relationship(
+        "Integration",
+        back_populates="company",
+        cascade="all, delete"
+    )

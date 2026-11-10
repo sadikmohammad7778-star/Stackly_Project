@@ -1,0 +1,385 @@
+.sync-details-page {
+  max-width: 1500px;
+  margin: auto;
+  padding: 28px;
+  color: var(--text-primary, #1e293b);
+}
+
+.sync-details-header {
+  margin-bottom: 25px;
+}
+
+.sync-back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 25px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sync-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.sync-subtitle {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+}
+
+.sync-title-row h1 {
+  margin: 8px 0;
+  font-size: 27px;
+}
+
+.sync-title-row p {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.sync-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 7px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sync-overview-card,
+.sync-section {
+  padding: 23px;
+  margin-bottom: 22px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+}
+
+.sync-overview-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.sync-overview-top span:first-child {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sync-overview-top h2 {
+  margin: 7px 0 0;
+  font-size: 26px;
+}
+
+.sync-overview-information {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.sync-overview-information div,
+.sync-metadata div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sync-overview-information span,
+.sync-metadata span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.sync-overview-information strong,
+.sync-metadata strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.sync-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sync-danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.sync-warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.sync-neutral {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.sync-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.sync-section-heading h2 {
+  margin: 0 0 7px;
+  font-size: 17px;
+}
+
+.sync-section-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sync-section-heading > svg {
+  color: #4f46e5;
+  font-size: 22px;
+}
+
+.sync-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sync-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.sync-stat-card > svg {
+  color: #4f46e5;
+  font-size: 21px;
+}
+
+.sync-stat-card span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sync-stat-card h2 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.sync-error-count {
+  padding: 8px 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sync-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sync-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+}
+
+.sync-table th {
+  padding: 13px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: left;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.sync-table td {
+  padding: 13px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.sync-error-message {
+  max-width: 280px;
+  white-space: normal;
+  line-height: 1.5;
+}
+
+.sync-retry-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sync-resolved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sync-empty {
+  padding: 35px !important;
+  color: #64748b;
+  text-align: center;
+}
+
+.sync-empty svg {
+  margin-right: 8px;
+  color: #16a34a;
+  vertical-align: middle;
+}
+
+.sync-metadata {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.sync-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+  margin-bottom: 17px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.sync-alert button {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.sync-alert-success {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sync-alert-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.sync-details-loading,
+.sync-details-error {
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #64748b;
+  text-align: center;
+}
+
+.sync-details-error > svg {
+  color: #dc2626;
+  font-size: 35px;
+}
+
+.sync-details-error button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 7px;
+  background: #4f46e5;
+  color: white;
+  cursor: pointer;
+}
+
+.sync-spinner {
+  animation: sync-spin 1s linear infinite;
+}
+
+@keyframes sync-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 950px) {
+  .sync-overview-information,
+  .sync-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sync-metadata {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .sync-details-page {
+    padding: 15px;
+  }
+
+  .sync-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sync-overview-information,
+  .sync-stat-grid,
+  .sync-metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .sync-section,
+  .sync-overview-card {
+    padding: 16px;
+  }
+}

@@ -39,6 +39,12 @@ import Workflow from "../pages/Workflow";
 import SystemHealth from "../pages/SystemHealth";
 import DataGovernance from "../pages/DataGovernance";
 import EmployeeAccessRequests from "../pages/EmployeeAccessRequests";
+import IntegrationDashboard from "../pages/integrations/IntegrationDashboard";
+import CreateIntegration from "../pages/integrations/CreateIntegration";
+import IntegrationDetails from "../pages/integrations/IntegrationDetails";
+import IntegrationMappings from "../pages/integrations/IntegrationMappings";
+import IntegrationSyncDetails from "../pages/integrations/IntegrationSyncDetails";
+import IntegrationSchedule from "../pages/integrations/IntegrationSchedule";
 import Settings from "../pages/Settings";
 
 export default function AppRoutes() {
@@ -110,6 +116,35 @@ export default function AppRoutes() {
           <Route
             path="/workflow"
             element={<Workflow />}
+          />
+          <Route
+            path="/integrations"
+            element={<IntegrationDashboard />}
+          />
+
+          <Route
+            path="/integrations/create"
+            element={<CreateIntegration />}
+          />
+
+          <Route
+            path="/integrations/:id"
+            element={<IntegrationDetails />}
+          />
+
+          <Route
+            path="/integrations/:id/mappings"
+            element={<IntegrationMappings />}
+          />
+
+          <Route
+            path="/integrations/:id/syncs/:syncId"
+            element={<IntegrationSyncDetails />}
+          />
+
+          <Route
+            path="/integrations/:id/schedule"
+            element={<IntegrationSchedule />}
           />
 
           <Route

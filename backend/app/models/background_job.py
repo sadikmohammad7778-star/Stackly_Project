@@ -45,31 +45,17 @@ class BackgroundJob(Base):
         index=True,
     )
 
-    started_at = Column(
-        DateTime,
-        nullable=True,
-    )
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    duration_ms = Column(Integer, nullable=True)
 
-    completed_at = Column(
-        DateTime,
-        nullable=True,
-    )
+    retry_count = Column(Integer, default=0, nullable=False)
+    max_retries = Column(Integer, default=3, nullable=False)
 
-    duration_ms = Column(
-        Integer,
-        nullable=True,
-    )
+    next_retry_at = Column(DateTime, nullable=True)
+    last_retry_at = Column(DateTime, nullable=True)
 
-    retry_count = Column(
-        Integer,
-        default=0,
-        nullable=False,
-    )
-
-    error_message = Column(
-        Text,
-        nullable=True,
-    )
+    error_message = Column(Text, nullable=True)
 
     created_at = Column(
         DateTime,
@@ -90,5 +76,10 @@ class BackgroundJob(Base):
             "ix_background_jobs_company_status",
             "company_id",
             "status",
+        ),
+        Index(
+            "ix_background_jobs_status_retry",
+            "status",
+            "next_retry_at",
         ),
     )

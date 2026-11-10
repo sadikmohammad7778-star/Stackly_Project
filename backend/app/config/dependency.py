@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -35,15 +35,14 @@ def get_current_user(
 
         if user_id is None:
             raise HTTPException(
-                status_code=401,
-                detail="Invalid token."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token.",
             )
 
-    except JWTError as e:
-        print("JWT ERROR:", e)
+    except JWTError:
         raise HTTPException(
-            status_code=401,
-            detail="Invalid token."
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token.",
         )
 
     user = (
@@ -54,24 +53,45 @@ def get_current_user(
 
     if not user:
         raise HTTPException(
-            status_code=404,
-            detail="User not found."
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found.",
+        )
+
+    if not user.status:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account is inactive.",
         )
 
     return user
 
+
+def require_roles(allowed_roles: set[str]):
+    def role_checker(
+        current_user: User = Depends(get_current_user),
+    ):
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to perform this action.",
+            )
+
+        return current_user
+
+    return role_checker
+
+
 def require_data_quality_admin(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(
+        require_roles({"Super Admin", "Company Admin"})
+    ),
 ):
-    allowed_roles = {
-        "Super Admin",
-        "Company Admin",
-    }
+    return current_user
 
-    if current_user.role not in allowed_roles:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to perform this action.",
-        )
 
+def require_integration_admin(
+    current_user: User = Depends(
+        require_roles({"Super Admin", "Company Admin"})
+    ),
+):
     return current_user
